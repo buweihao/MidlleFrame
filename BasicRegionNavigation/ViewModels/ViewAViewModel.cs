@@ -53,8 +53,6 @@ namespace BasicRegionNavigation.ViewModels
         private readonly ConcurrentDictionary<string, ModuleModel> _modulesCache = new ConcurrentDictionary<string, ModuleModel>();
 
 
-
-
         public ViewAViewModel(IModbusService modbusService)
         {
             _modbusService = modbusService;
@@ -66,6 +64,11 @@ namespace BasicRegionNavigation.ViewModels
             _modbusService.OnModuleDataChanged += HandleDataChanged;
 
             InitializeSubscriptions(_modbusService);
+
+            StartStatusAndCapacitySimulation();
+            StartProductInfoSimulation();
+            StartPieInfoSimulation();
+            StartColumnInfoSimulation();
         }
         // 在 MainViewModel 或初始化逻辑中
         public void InitializeSubscriptions(IModbusService modbusService)
@@ -128,9 +131,6 @@ namespace BasicRegionNavigation.ViewModels
         {
             if (_modulesCache.TryGetValue(moduleId, out var targetModule))
             {
-                // 在 UI 线程更新 (如果 Modbus 是后台线程)
-                // Application.Current.Dispatcher.Invoke(() => ...
-
                 targetModule.DispatchData(category, data);
             }
             else
@@ -147,10 +147,211 @@ namespace BasicRegionNavigation.ViewModels
                 CurrentModule = model;
             }
         }
+        // 在 ViewAViewModel 类中添加此方法
+        private void StartStatusAndCapacitySimulation()
+        {
+            // 开启后台任务：模拟状态 (Status) 和 产能 (Capacity)
+            Task.Run(async () =>
+            {
+                var random = new Random();
+                while (true)
+                {
+                    await Task.Delay(1000); // 1秒刷新一次
 
+                    // 1. 构造 Status (状态) 数据
+                    var statusData = new Dictionary<string, int>
+            {
+                // 周边墩子
+                { "FeedStation1Status", random.Next(0, 4) },
+                { "FeedStation2Status", random.Next(0, 4) },
+                { "FeedStation3Status", random.Next(0, 4) },
+                { "HangerOkStation1Status", random.Next(0, 2) },
+                { "HangerOkStation2Status", random.Next(0, 2) },
+                { "HangerNgStationStatus", random.Next(0, 2) },
 
+                // 机械手
+                { "ProductRobotStatus", random.Next(0, 4) },
+                { "HangerRobotStatus", random.Next(0, 4) },
 
+                // 供料机与翻转台
+                { "FeederAStatus", random.Next(0, 4) },
+                { "FeederBStatus", random.Next(0, 4) },
+                { "FlipperStatus", random.Next(0, 4) }
+            };
 
+                    // 2. 构造 Capacity (产能) 数据
+                    var capacityData = new Dictionary<string, int>
+            {
+                { "FeederACapacity", random.Next(100, 200) },
+                { "FeederBCapacity", random.Next(100, 200) },
+                { "FlipperCapacity", random.Next(50, 100) }
+            };
+
+                    // 3. 推送数据
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        HandleDataChanged("1", ModuleDataCategory.Status, statusData);
+                        HandleDataChanged("1", ModuleDataCategory.Capacity, capacityData);
+                    });
+                }
+            });
+        }
+        private void StartProductInfoSimulation()
+        {
+            // 开启后台任务：模拟产品信息 (ProductInfo)
+            Task.Run(async () =>
+            {
+                var random = new Random();
+                // 产品信息可能不需要像状态那样频繁刷新，这里设为 3 秒
+                while (true)
+                {
+                    await Task.Delay(3000);
+
+                    // 1. 构造产品信息字典
+                    // Key 必须对应 CurrentProductInfo 类中的 FieldMapping 配置
+                    var productData = new Dictionary<string, string>
+            {
+                { "ProjectCode", "PROJ-" + random.Next(1000, 9999) },   // 对应：项目编号
+                { "Material",    random.Next(0, 2) == 0 ? "铝合金" : "不锈钢" }, // 对应：原料
+                { "AnodeType",   "Type-" + (char)random.Next('A', 'F') }, // 对应：阳极类型
+                { "Color",       random.Next(0, 2) == 0 ? "黑色" : "银色" }  // 对应：颜色
+            };
+
+                    // 2. 推送数据
+                    // 这里假设 上挂(Up) 和 下挂(Dn) 显示相同的信息进行测试
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // 推送给上挂产品信息
+                        HandleDataChanged("1", ModuleDataCategory.UpProductInfo, productData);
+
+                        // 推送给下挂产品信息
+                        HandleDataChanged("1", ModuleDataCategory.DnProductInfo, productData);
+                    });
+                }
+            });
+        }
+
+        private void StartPieInfoSimulation()
+        {
+            // 开启后台任务：模拟饼图数据 (PieInfo)
+            Task.Run(async () =>
+            {
+                var random = new Random();
+
+                while (true)
+                {
+                    await Task.Delay(2500); // 2.5秒刷新一次，避免闪烁过快
+
+                    // --- 1. 构造上挂饼图数据 ---
+                    // Key = 扇区名称, Value = 数值
+                    var upPieData = new Dictionary<string, int>
+            {
+                { "正常运行", random.Next(60, 100) },
+                { "设备待机", random.Next(10, 30) },
+                { "故障停机", random.Next(0, 15) },
+                { "换料暂停", random.Next(5, 20) }
+            };
+
+                    // --- 2. 构造下挂饼图数据 ---
+                    // 演示使用不同的分类名称
+                    var dnPieData = new Dictionary<string, int>
+            {
+                { "型号A", random.Next(100, 200) },
+                { "型号B", random.Next(50, 150) },
+                { "型号C", random.Next(20, 80) },
+                { "返工",   random.Next(0, 10) }
+            };
+
+                    // --- 3. 推送数据 ---
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // 推送给上挂饼图 (对应 UpMyPieSeries)
+                        HandleDataChanged("1", ModuleDataCategory.UpPieInfo, upPieData);
+
+                        // 推送给下挂饼图 (对应 DnMyPieSeries)
+                        HandleDataChanged("1", ModuleDataCategory.DnPieInfo, dnPieData);
+                    });
+                }
+            });
+        }
+        private void StartColumnInfoSimulation()
+        {
+            // 开启后台任务：模拟柱状图数据 (ColumnInfo) 及 班次切换
+            Task.Run(async () =>
+            {
+                var random = new Random();
+                while (true)
+                {
+                    await Task.Delay(4000); // 4秒刷新一次，方便观察班次切换
+
+                    // --- 1. 随机生成一个小时 (0-23) 用于模拟当前时间 ---
+                    int simulatedHour = random.Next(0, 24);
+
+                    // --- 2. 判断班次并生成 X 轴标签 (每班 12 小时) ---
+                    // 白班定义：8:00 (含) ~ 20:00 (不含)
+                    bool isDayShift = simulatedHour >= 8 && simulatedHour < 20;
+                    string[] labels;
+
+                    if (isDayShift)
+                    {
+                        // 白班: 8, 9, 10 ... 19
+                        // 生成 8 到 19 的序列
+                        labels = Enumerable.Range(8, 12).Select(h => h.ToString()).ToArray();
+                    }
+                    else
+                    {
+                        // 夜班: 20, 21 ... 23, 0, 1 ... 7
+                        // 从 20 开始，循环 12 个小时
+                        var nightLabels = new List<string>();
+                        for (int i = 0; i < 12; i++)
+                        {
+                            int h = (20 + i) % 24; // 超过 24 取模
+                            nightLabels.Add(h.ToString());
+                        }
+                        labels = nightLabels.ToArray();
+                    }
+
+                    // --- 3. 构造 12 个柱状图数据 (模拟产能) ---
+                    var upValues = new double[12];
+                    var dnValues = new double[12];
+
+                    for (int i = 0; i < 12; i++)
+                    {
+                        // 模拟数据：随机生成 10~100 的产能
+                        // (可选优化：可以根据模拟时间只填充当前时间之前的柱子，这里简单填满)
+                        upValues[i] = random.Next(10, 100);
+                        dnValues[i] = random.Next(10, 100);
+                    }
+
+                    // --- 4. 更新 UI ---
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // A. 推送柱状图数值 (通过 HandleDataChanged 标准流程)
+                        HandleDataChanged("1", ModuleDataCategory.UpColumnSeries, upValues);
+                        HandleDataChanged("1", ModuleDataCategory.DnColumnSeries, dnValues);
+
+                        // B. 直接更新 X 轴标签
+                        // 说明：这里直接操作 ViewModel 的属性来模拟 UpdateXLabelsByTime 的效果，
+                        // 从而避开 ModuleModel 默认逻辑中生成 "MM-dd" 格式标签的问题，符合您要求的简单数字格式。
+                        if (CurrentModule != null &&
+                            CurrentModule.CurrentColumnInfo != null &&
+                            CurrentModule.CurrentColumnInfo.XAxes != null &&
+                            CurrentModule.CurrentColumnInfo.XAxes.Length > 0)
+                        {
+                            // LiveCharts 的 Axis.Labels 支持直接赋值更新
+                            CurrentModule.CurrentColumnInfo.XAxes[0].Labels = labels;
+                        }
+                    });
+                }
+            });
+        }
+        [RelayCommand]
+        private async Task NavigateModule(string index)
+        {
+            SwitchModule(index);
+        }
+
+        
 
 
 
@@ -237,21 +438,6 @@ namespace BasicRegionNavigation.ViewModels
 
         // ========================== 命令 ==========================
 
-        [RelayCommand]
-        private async Task NavigateModule(string param)
-        {
-            // 保留原有逻辑结构
-            // if (param != null && Global.GetValue("isViewAReadMission") == "1")
-            // {
-            //    ModuleNum = param;
-            //    var model = _cache.GetOrAdd(int.Parse(ModuleNum), i => GetModule(i));
-            //    CurrentModule = model;
-            //    cts.Cancel();
-            //    cts = new CancellationTokenSource();
-            //    var loopTasks = new[] { ... };
-            // }
-            await Task.CompletedTask; // 占位
-        }
 
         [RelayCommand]
         private void ShowText(string param)

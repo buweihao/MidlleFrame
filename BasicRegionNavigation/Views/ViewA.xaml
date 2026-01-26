@@ -30,7 +30,7 @@
                 </Setter>
             </Style>
             <local:IntToBrushConverter x:Key="IntToBrushConverter"/>
-            
+
         </ResourceDictionary>
     </UserControl.Resources>
     <!-- 主体内容 -->
@@ -48,8 +48,8 @@
         </Grid.ColumnDefinitions>
         <!-- 二级模块导航 -->
         <StackPanel Panel.ZIndex="99" Grid.ColumnSpan="3"  Orientation="Horizontal" HorizontalAlignment="Left" Background="Transparent" >
-            <hc:ClockRadioButton x:Name="模组1"  Content="{Binding Model1Name}" Command="{Binding NavigateModuleCommand}" CommandParameter="1" Style="{StaticResource Nav2ToggleButtonStyle}" Tag="1" GroupName="Menu2"   MouseRightButtonUp="ClockRadioButton_MouseRightButtonUp"  ToolTip="右键修改配置,Ctrl +-加减模组" ToolTipService.InitialShowDelay="100"  IsChecked="True" Margin="25,0,50,0"/>
-            <hc:ClockRadioButton x:Name="模组2" Content="{Binding Model2Name}" Command="{Binding NavigateModuleCommand}" CommandParameter="2" Style="{StaticResource Nav2ToggleButtonStyle}" Tag="2" GroupName="Menu2" MouseRightButtonUp="ClockRadioButton_MouseRightButtonUp"  ToolTip="右键修改配置,Ctrl +-加减模组" ToolTipService.InitialShowDelay="100" />
+            <hc:ClockRadioButton x:Name="模组1" Content="  模组1  " Command="{Binding NavigateModuleCommand}" CommandParameter="1" Style="{StaticResource Nav2ToggleButtonStyle}" Tag="1" GroupName="Menu2"   MouseRightButtonUp="ClockRadioButton_MouseRightButtonUp"  ToolTip="右键修改配置,Ctrl +-加减模组" ToolTipService.InitialShowDelay="100"  IsChecked="True" Margin="25,0,50,0"/>
+            <hc:ClockRadioButton x:Name="模组2" Content="  模组2  " Command="{Binding NavigateModuleCommand}" CommandParameter="2" Style="{StaticResource Nav2ToggleButtonStyle}" Tag="2" GroupName="Menu2" MouseRightButtonUp="ClockRadioButton_MouseRightButtonUp"  ToolTip="右键修改配置,Ctrl +-加减模组" ToolTipService.InitialShowDelay="100" />
             <hc:ClockRadioButton x:Name="模组3" Content="{Binding Model3Name}" Command="{Binding NavigateModuleCommand}" CommandParameter="3" Style="{StaticResource Nav2ToggleButtonStyle}" Tag="3" GroupName="Menu2" MouseRightButtonUp="ClockRadioButton_MouseRightButtonUp"  ToolTip="右键修改配置,Ctrl +-加减模组" ToolTipService.InitialShowDelay="100" />
             <hc:ClockRadioButton x:Name="模组4" Content="{Binding Model4Name}" Command="{Binding NavigateModuleCommand}" CommandParameter="4" Style="{StaticResource Nav2ToggleButtonStyle}" Tag="4" GroupName="Menu2" MouseRightButtonUp="ClockRadioButton_MouseRightButtonUp" ToolTip="右键修改配置,Ctrl +-加减模组" ToolTipService.InitialShowDelay="100" />
             <Label MinWidth="550"
@@ -69,120 +69,113 @@
 
         <ctrls:ProductInfoGroup Grid.Row="1" Grid.Column="2" 
                         Title="上挂产品"
-                        Items="{Binding CurrentModule.UpProductInfo}"
+                        Items="{Binding CurrentModule.CurrentProductInfo.UpProductInfo}"
                         Background="Transparent"
                         Visibility="Visible"
                         HorizontalAlignment="Stretch" 
                         VerticalAlignment="Stretch"/>
-
-        <ctrls:ProductInfoGroup Grid.Row="1" 
-                        Title="下挂产品"
-                        Items="{Binding CurrentModule.DownProductInfo}"
-                        HorizontalAlignment="Stretch" 
-                        VerticalAlignment="Stretch" />
-        <con:PieChartCard  Grid.Row="2" Grid.Column="2" Title="当班上挂产品" 
-                                   Series="{Binding DashboardViewModel.UpperTotalSeries}"
-                           
-                                    
-                            />
-                           
-        <con:PieChartCard Grid.Row="2"  Title="当班下挂产品" 
-                                                             Series="{Binding DashboardViewModel.LowerTotalSeries}"
-                           />
-
+        <con:PieChartCard  Grid.Row="2"
+                           Grid.Column="2"
+                           Title="产品饼图"
+                           Series="{Binding CurrentModule.CurrentPieInfo.UpMyPieSeries}" />
 
         <con:CapacityChartCard Title="当班上挂产能" Grid.Row="3" Grid.Column="2"
-                               Labels="{Binding DashboardViewModel.CurrentLabels}"
-                               Values="{Binding DashboardViewModel.CurrentUpperData }"/>
-        <con:CapacityChartCard Title="当班下挂产能" Grid.Row="3" 
-                               Labels="{Binding DashboardViewModel.CurrentLabels}"
-                               Values="{Binding DashboardViewModel.CurrentLowerData }"/>
-
-        <!--<Border x:Name="Pic" Grid.Column="1" Grid.Row="1"  Grid.RowSpan="2" Background="#232f3a" Margin="10" CornerRadius="6" Padding="-1">
-            <Image
-                         Source="/ModuleA;component/Resources/RealPic.png"
-                         Stretch="UniformToFill"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center" 
-                />
-        </Border>-->
+                               Labels="{Binding CurrentModule.CurrentColumnInfo.XAxes}"
+                               Values="{Binding CurrentModule.CurrentColumnInfo.CSeriesUp}"/>
         <!-- 边框在下层 -->
         <Border x:Name="PicBorder"
-            Grid.Column="1"
-            Grid.Row="1"
-            Grid.RowSpan="2"
-            Background="#232f3a"
-            Margin="10"
-            CornerRadius="6" Panel.ZIndex="1" >
-            <Grid Panel.ZIndex="2" >
-                <Path Panel.ZIndex="2" Margin="-520,-250,0,0"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Grid.Row="1"
+                Grid.RowSpan="2"
+                Background="#232f3a"
+                Margin="10"
+                CornerRadius="6"
+                Panel.ZIndex="1">
+            <Grid Panel.ZIndex="2">
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="-750,-150,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.HangerOkStation1Status}" 
+                      Tag="OK挂具工位一"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="-550,-70,0,0"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="-410,-350,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.HangerOkStation2Status}" 
+                      Tag="OK挂具工位二"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="-250,-450,0,0"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="-90,-350,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.HangerNgStationStatus}" 
+                      Tag="NG挂具工位"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="-40,-450,0,0"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="-200,0,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.HangerRobotStatus}" 
+                      Tag="上挂具大机械手"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="170,-450,0,0"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="640,30,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.ProductRobotStatus}" 
+                      Tag="上产品小机械手"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="-190,250,0,0" Tag="下产品机械手"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="-100,460,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.FeedStation1Status}" 
+                      Tag="上挂工位一"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="300,250,0,0" Tag="上产品机械手"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="-440,460,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.FeedStation2Status}" 
+                      Tag="上挂工位二"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="-190,-250,0,0" Tag="下挂具机械手"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <Path Panel.ZIndex="2" Visibility="Visible" Margin="-780,250,0,0"
+                      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
+                      Fill="{Binding CurrentModule.CurrentStatus.FeedStation3Status}" 
+                      Tag="上挂工位三"
+                      Width="22" Height="22" Stretch="Uniform" />
 
-                <Path Panel.ZIndex="2" Margin="120,-250,0,0" Tag="上挂具机械手"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <con:StatusBox  Visibility="Visible"
+                                Margin="520,-370,0,0"
+                                Title="供料机A"
+                                Output="{Binding CurrentModule.CurrentStatus.FeederACapacity}"
+                                StatusColor="{Binding CurrentModule.CurrentStatus.FeederAStatus}"
+                                Height="80"
+                                Width="130"
+                                Panel.ZIndex="2" />
 
-                <Path Panel.ZIndex="2" Margin="580,-250,0,0"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
+                <con:StatusBox  Visibility="Visible"
+                                Margin="550,380,0,0"
+                                Title="供料机B"
+                                Output="{Binding CurrentModule.CurrentStatus.FeederBCapacity}"
+                                StatusColor="{Binding CurrentModule.CurrentStatus.FeederBStatus}"
+                                Height="80"
+                                Width="130"
+                                Panel.ZIndex="2" />
 
-                <Path Panel.ZIndex="2" Margin="590,-50,0,0"
-      Data="M512 512m-512 0a100 100 0 1 0 1024 0 100 100 0 1 0-1024 0Z"
-      Fill="Gray"
-      Width="22" Height="22" Stretch="Uniform" />
-                <con:StatusBox Margin="600,370,0,0" Title="上料模组 B"  Output="-1" Height="80" Width="130" Panel.ZIndex="2"/>
-                <con:StatusBox Margin="600,120,0,0" Title="上料模组 A"  Output="-1" Height="80" Width="130" Panel.ZIndex="2"/>
-                <con:StatusBox Margin="210,10,0,0" Title="上翻转台"     Output="-1" Height="80" Width="130" Panel.ZIndex="2"/>
-                <con:StatusBox Margin="-500,370,0,0" Title="下料模组 B" Output="-1" Height="80" Width="130" Panel.ZIndex="2"/>
-                <con:StatusBox Margin="-500,120,0,0" Title="下料模组 A" Output="-1" Height="80" Width="130" Panel.ZIndex="2"/>
-                <con:StatusBox Margin="-130,10,0,0" Title="下翻转台"    Output="-1" Height="80" Width="130" Panel.ZIndex="2"/>
-                
-                
+                <con:StatusBox  Visibility="Visible"
+                                Margin="250,-40,0,0"
+                                Title="翻转台"
+                                Output="{Binding CurrentModule.CurrentStatus.FlipperCapacity}"
+                                StatusColor="{Binding CurrentModule.CurrentStatus.FlipperStatus}"
+                                Height="80"
+                                Width="130"
+                                Panel.ZIndex="2" />
                 <!-- 图片在上层 -->
-                <Image Source="/Resources/RealPic.png"  Grid.ColumnSpan="6" Grid.RowSpan="5"         Margin="-90"
-           Stretch="UniformToFill"
-           HorizontalAlignment="Center"
-           VerticalAlignment="Center"
-           Panel.ZIndex="1" />
+                <Image Source="/Resources/RealPic.png"
+                       Grid.ColumnSpan="6"
+                       Grid.RowSpan="5"
+                       Margin="-150"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Panel.ZIndex="1" />
             </Grid>
 
 
@@ -190,87 +183,118 @@
         </Border>
 
 
-        <Border Grid.Column="1" Grid.Row="3" Background="#1E2A36" CornerRadius="6" Padding="5" Margin="10">
+        <Border Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Grid.Row="3"
+                Background="#1E2A36"
+                CornerRadius="6"
+                Padding="5"
+                Margin="10">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="1*"/>
-                    <RowDefinition Height="7*"/>
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="7*" />
                 </Grid.RowDefinitions>
-                <Border CornerRadius="6,6,0,0" Background="#2e3a44">
+                <Border CornerRadius="6,6,0,0"
+                        Background="#2e3a44">
                     <TextBlock Text="实时报警"
-                   FontSize="16"
-                   FontWeight="Bold"
-                   Foreground="White"
-                   Margin="10,5,0,6"  />
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               Margin="10,5,0,6" />
                 </Border>
-                <DataGrid ItemsSource="{Binding CurrentModule.CurrentWarningInfo.AlarmList}" Grid.Row="1"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="Column"
-                  GridLinesVisibility="None"
-                  IsReadOnly="True"
-                  RowHeight="36"
-                  FontSize="14"
-                  ColumnHeaderHeight="32"
-                  Background="#1E2A36"
-                  BorderThickness="0"
-                  HorizontalGridLinesBrush="Transparent"
-                  VerticalGridLinesBrush="Transparent">
+                <DataGrid ItemsSource="{Binding CurrentModule.currentWarningInfo.AlarmList}"
+                          Grid.Row="1"
+                          AutoGenerateColumns="False"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="None"
+                          IsReadOnly="True"
+                          RowHeight="36"
+                          FontSize="14"
+                          ColumnHeaderHeight="32"
+                          Background="#1E2A36"
+                          BorderThickness="0"
+                          HorizontalGridLinesBrush="Transparent"
+                          VerticalGridLinesBrush="Transparent">
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Foreground" Value="White"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                            <Setter Property="FontSize" Value="14"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="Foreground"
+                                    Value="White" />
+                            <Setter Property="FontWeight"
+                                    Value="Bold" />
+                            <Setter Property="FontSize"
+                                    Value="14" />
+                            <Setter Property="HorizontalContentAlignment"
+                                    Value="Left" />
                             <!-- ✅ 保留这个 -->
-                            <Setter Property="Background" Value="#1e242a"/>
-                            <Setter Property="BorderBrush" Value="#2e3a44"/>
+                            <Setter Property="Background"
+                                    Value="#1e242a" />
+                            <Setter Property="BorderBrush"
+                                    Value="#2e3a44" />
                         </Style>
                     </DataGrid.ColumnHeaderStyle>
 
                     <!-- ✅ 单元格样式 -->
                     <DataGrid.CellStyle>
                         <Style TargetType="DataGridCell">
-                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="HorizontalContentAlignment"
+                                    Value="Left" />
                             <!-- 水平左对齐 -->
-                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="VerticalContentAlignment"
+                                    Value="Center" />
                             <!-- ✅ 垂直居中 -->
-                            <Setter Property="Foreground" Value="Red"/>
-                            <Setter Property="Background" Value="#282b2e"/>
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Padding" Value="4,0"/>
+                            <Setter Property="Foreground"
+                                    Value="Red" />
+                            <Setter Property="Background"
+                                    Value="#282b2e" />
+                            <Setter Property="BorderThickness"
+                                    Value="0" />
+                            <Setter Property="Padding"
+                                    Value="4,0" />
                         </Style>
                     </DataGrid.CellStyle>
 
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="序号" Binding="{Binding Index}" Width="60">
+                        <DataGridTextColumn Header="序号"
+                                            Binding="{Binding Index}"
+                                            Width="60">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="VerticalAlignment"
+                                            Value="Center" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
                         <DataGridTextColumn Header="时间"
-                                            Binding="{Binding TimeFormatted}" Width="180">
+                                            Binding="{Binding TimeFormatted}"
+                                            Width="180">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="VerticalAlignment"
+                                            Value="Center" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="设备" Binding="{Binding Device}" Width="*">
+                        <DataGridTextColumn Header="设备"
+                                            Binding="{Binding Device}"
+                                            Width="*">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="VerticalAlignment"
+                                            Value="Center" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="故障描述" Binding="{Binding Description}" Width="2*">
+                        <DataGridTextColumn Header="故障描述"
+                                            Binding="{Binding Description}"
+                                            Width="2*">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="VerticalAlignment"
+                                            Value="Center" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>

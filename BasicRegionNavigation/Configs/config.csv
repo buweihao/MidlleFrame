@@ -1,348 +1,160 @@
 ﻿// DeviceID, IP, Port, TagName, Address, DataType, ScanRate, Area, IsFavorite, Length(Regs)
-// 注意: Address 必须是纯数字(根据当前代码逻辑)，Area 必须是 Coils 或 Registers,,,,,,,
-// DeviceID, IP, Port, TagName, Address, DataType, ScanRate, Area, IsFavorite, Length(Regs)
-// --- 上料机A (UpLoadModuleA) 基础状态与故障 ---
-UpLoadModuleA, 127.0.0.1, 5000, DeviceStatus, 7004, Int16, 100, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, TotalCapacity, 6764, Int16, 100, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, ProjectNumber, 7400, String, 100, Registers, False, 4
-UpLoadModuleA, 127.0.0.1, 5000, ProductCategory, 7410, String, 100, Registers, False, 2
-UpLoadModuleA, 127.0.0.1, 5000, AnodeType, 7420, String, 100, Registers, False, 4
-UpLoadModuleA, 127.0.0.1, 5000, ProductColor, 7425, String, 100, Registers, False, 4
-UpLoadModuleA, 127.0.0.1, 5000, MaterialCategory, 7430, String, 100, Registers, False, 4
-UpLoadModuleA, 127.0.0.1, 5000, SandblastingLine, 7435, String, 100, Registers, False, 4
-UpLoadModuleA, 127.0.0.1, 5000, SensorFault, 15292, Bool, 100, Coils, False
-UpLoadModuleA, 127.0.0.1, 5000, ComponentFault, 15293, Bool, 100, Coils, False
-UpLoadModuleA, 127.0.0.1, 5000, TraceCommError, 15294, Bool, 100, Coils, False
-UpLoadModuleA, 127.0.0.1, 5000, MasterCommError, 15295, Bool, 100, Coils, False
-UpLoadModuleA, 127.0.0.1, 5000, ProductCodeTriggerRead, 5100, String, 500, Registers, True, 54
-UpLoadModuleA, 127.0.0.1, 5000, ProductCodeTriggerAddress, 7010, Int16, 500, Registers, True
-UpLoadModuleA, 127.0.0.1, 5000, ProductCodeReturnRead, 7011, Int16, 500, Registers, True
-UpLoadModuleA, 127.0.0.1, 5000, ProductionConversionTriggered, 8688, Bool, 100, Coils, False
-
-// --- 上料机A 小时产能统计 (包含展开的数组) ---
-UpLoadModuleA, 127.0.0.1, 5000, HourlyProjectNumber, 7400, String, 500, Registers, False, 4
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H01, 6700, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H02, 6702, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H03, 6704, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H04, 6706, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H05, 6708, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H06, 6710, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H07, 6712, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H08, 6714, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H09, 6716, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H10, 6718, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H11, 6720, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H12, 6722, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H13, 6730, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H14, 6732, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H15, 6734, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H16, 6736, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H17, 6738, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H18, 6740, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H19, 6742, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H20, 6744, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H21, 6746, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H22, 6748, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H23, 6750, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyCapacity_H24, 6752, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyStandbyTime, 6766, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyFaultTime, 6966, Int32, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyFaultCount, 6998, Int16, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlySystemNGCount, 4752, Int16, 500, Registers, False
-UpLoadModuleA, 127.0.0.1, 5000, HourlyMaterialLoss, 6999, Int16, 500, Registers, False
-
-// --- 上料机B (UpLoadModuleB) 基础状态与故障 ---
-UpLoadModuleB, 127.0.0.2, 5000, DeviceStatus, 7004, Int16, 100, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, TotalCapacity, 6764, Int16, 100, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, ProjectNumber, 7400, String, 100, Registers, False, 4
-UpLoadModuleB, 127.0.0.2, 5000, ProductCategory, 7410, String, 100, Registers, False, 2
-UpLoadModuleB, 127.0.0.2, 5000, AnodeType, 7420, String, 100, Registers, False, 4
-UpLoadModuleB, 127.0.0.2, 5000, ProductColor, 7425, String, 100, Registers, False, 4
-UpLoadModuleB, 127.0.0.2, 5000, MaterialCategory, 7430, String, 100, Registers, False, 4
-UpLoadModuleB, 127.0.0.2, 5000, SandblastingLine, 7435, String, 100, Registers, False, 4
-UpLoadModuleB, 127.0.0.2, 5000, SensorFault, 15292, Bool, 100, Coils, False
-UpLoadModuleB, 127.0.0.2, 5000, ComponentFault, 15293, Bool, 100, Coils, False
-UpLoadModuleB, 127.0.0.2, 5000, TraceCommError, 15294, Bool, 100, Coils, False
-UpLoadModuleB, 127.0.0.2, 5000, MasterCommError, 15295, Bool, 100, Coils, False
-UpLoadModuleB, 127.0.0.2, 5000, ProductCodeTriggerRead, 5100, String, 500, Registers, True, 54
-UpLoadModuleB, 127.0.0.2, 5000, ProductCodeTriggerAddress, 7010, Int16, 500, Registers, True
-UpLoadModuleB, 127.0.0.2, 5000, ProductCodeReturnRead, 7011, Int16, 500, Registers, True
-
-// --- 上料机B 小时产能统计 (包含展开的数组) ---
-UpLoadModuleB, 127.0.0.2, 5000, HourlyProjectNumber, 7400, String, 500, Registers, False, 4
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H01, 6700, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H02, 6702, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H03, 6704, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H04, 6706, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H05, 6708, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H06, 6710, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H07, 6712, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H08, 6714, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H09, 6716, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H10, 6718, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H11, 6720, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H12, 6722, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H13, 6730, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H14, 6732, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H15, 6734, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H16, 6736, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H17, 6738, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H18, 6740, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H19, 6742, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H20, 6744, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H21, 6746, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H22, 6748, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H23, 6750, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyCapacity_H24, 6752, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyStandbyTime, 6766, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyFaultTime, 6966, Int32, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyFaultCount, 6998, Int16, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlySystemNGCount, 4752, Int16, 500, Registers, False
-UpLoadModuleB, 127.0.0.2, 5000, HourlyMaterialLoss, 6999, Int16, 500, Registers, False
-
-
-// ==========================================
-// 1. 墩子与机械手 (Pier & Robot)
-// ==========================================
-PierModule, 127.0.0.3, 5000, LoadingPier1_Status, 15202, Bool, 100, Coils, False
-PierModule, 127.0.0.3, 5000, LoadingPier2_Status, 15203, Bool, 100, Coils, False
-PierModule, 127.0.0.3, 5000, HangingOKPier, 15204, Bool, 100, Coils, False
-PierModule, 127.0.0.3, 5000, PlaceNGPier, 15205, Bool, 100, Coils, False
-PierModule, 127.0.0.3, 5000, UnhangingOKPier, 15206, Bool, 100, Coils, False
-PierModule, 127.0.0.3, 5000, UnloadingPier1_Status, 15207, Bool, 100, Coils, False
-PierModule, 127.0.0.3, 5000, UnloadingPier2_Status, 15208, Bool, 100, Coils, False
-PierModule, 127.0.0.3, 5000, LoadProductRobot_Status, 7000, Int16, 100, Registers, False
-PierModule, 127.0.0.3, 5000, LoadFixtureRobot_Status, 7001, Int16, 100, Registers, False
-PierModule, 127.0.0.3, 5000, UnloadProductRobot_Status, 7002, Int16, 100, Registers, False
-PierModule, 127.0.0.3, 5000, UnloadFixtureRobot_Status, 7003, Int16, 100, Registers, False
-
-// ==========================================
-// 2. 下料机A (DropModuleA)
-// ==========================================
-// --- 基础信息 ---
-DropModuleA, 127.0.0.3, 5000, DropModuleA_DeviceStatus, 7004, Int16, 100, Registers, False
-DropModuleA, 127.0.0.3, 5000, DropModuleA_TotalCapacity, 6090, Int16, 100, Registers, False
-DropModuleA, 127.0.0.3, 5000, DropModuleA_ProjectNumber, 7400, String, 100, Registers, False, 4
-DropModuleA, 127.0.0.3, 5000, DropModuleA_ProductCategory, 7410, String, 100, Registers, False, 2
-DropModuleA, 127.0.0.3, 5000, DropModuleA_AnodeType, 7420, String, 100, Registers, False, 4
-DropModuleA, 127.0.0.3, 5000, DropModuleA_ProductColor, 7425, String, 100, Registers, False, 4
-DropModuleA, 127.0.0.3, 5000, DropModuleA_MaterialCategory, 7430, String, 100, Registers, False, 4
-DropModuleA, 127.0.0.3, 5000, DropModuleA_SandblastingLine, 7435, String, 100, Registers, False, 4
-// --- 故障信号 ---
-DropModuleA, 5000, DropModuleA_SensorFault, 15292, Bool, 100, Coils, False
-DropModuleA, 5000, DropModuleA_ComponentFault, 15293, Bool, 100, Coils, False
-DropModuleA, 5000, DropModuleA_TraceCommError, 15294, Bool, 100, Coils, False
-DropModuleA, 5000, DropModuleA_MasterCommError, 15295, Bool, 100, Coils, False
-// --- 小时产能统计 ---
-DropModuleA, 127.0.0.3, 5000, HourlyProjectNumber, 7400, String, 500, Registers, False, 4
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H01, 6000, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H02, 6002, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H03, 6004, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H04, 6006, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H05, 6008, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H06, 6010, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H07, 6012, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H08, 6014, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H09, 6016, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H10, 6018, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H11, 6020, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H12, 6022, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H13, 6030, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H14, 6032, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H15, 6034, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H16, 6036, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H17, 6038, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H18, 6040, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H19, 6042, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H20, 6044, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H21, 6046, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H22, 6048, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H23, 6050, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyCapacity_H24, 6052, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyStandbyTime, 6766, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyFaultTime, 6966, Int32, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyFaultCount, 6998, Int16, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlySystemNGCount, 4752, Int16, 500, Registers, False
-DropModuleA, 127.0.0.3, 5000, HourlyMaterialLoss, 6999, Int16, 500, Registers, False
-
-// ==========================================
-// 3. 上翻转台 (UpperFlipper)
-// ==========================================
-// --- 基础信息 ---
-UpperFlipper, 127.0.0.3, 5000, DeviceStatus, 7005, Int16, 100, Registers, False
-UpperFlipper, 127.0.0.3, 5000, TotalCapacity, 844, Int16, 100, Registers, False
-UpperFlipper, 127.0.0.3, 5000, ProjectNumber, 7100, String, 100, Registers, False, 4
-UpperFlipper, 127.0.0.3, 5000, ProductCategory, 7110, String, 100, Registers, False, 2
-UpperFlipper, 127.0.0.3, 5000, AnodeType, 7120, String, 100, Registers, False, 4
-UpperFlipper, 127.0.0.3, 5000, ProductColor, 7125, String, 100, Registers, False, 4
-UpperFlipper, 127.0.0.3, 5000, MaterialCategory, 7130, String, 100, Registers, False, 4
-UpperFlipper, 127.0.0.3, 5000, SandblastingLine, 7135, String, 100, Registers, False, 4
-// --- 故障信号 ---
-UpperFlipper, 127.0.0.3, 5000, SensorFault, 15292, Bool, 100, Coils, False
-UpperFlipper, 127.0.0.3, 5000, ComponentFault, 15293, Bool, 100, Coils, False
-UpperFlipper, 127.0.0.3, 5000, TraceCommError, 15294, Bool, 100, Coils, False
-UpperFlipper, 127.0.0.3, 5000, HMI_DataExchangeFault, 15295, Bool, 100, Coils, False
-UpperFlipper, 127.0.0.3, 5000, Robot_DataExchangeFault, 15296, Bool, 100, Coils, False
-// --- 触发式读取 (数据 + 触发地址) ---
-UpperFlipper, 127.0.0.3, 5000, ProductCodeTriggerRead, 3000, String, 500, Registers, True, 51
-UpperFlipper, 127.0.0.3, 5000, FixtureCodeTriggerRead, 5000, String, 500, Registers, True, 4
-UpperFlipper, 127.0.0.3, 5000, ProjectNumberTriggerRead, 7100, String, 500, Registers, True, 4
-UpperFlipper, 127.0.0.3, 5000, MaterialCategoryTriggerRead, 7130, String, 500, Registers, True, 3
-UpperFlipper, 127.0.0.3, 5000, AnodeTypeTriggerRead, 7120, String, 500, Registers, True, 2
-UpperFlipper, 127.0.0.3, 5000, ColorTriggerRead, 7125, String, 500, Registers, True, 2
-// **注意：以下触发位为上述所有TriggerRead公用**
-UpperFlipper, 127.0.0.3, 5000, GlobalTriggerAddress, 7010, Int16, 500, Registers, True
-UpperFlipper, 127.0.0.3, 5000, GlobalReturnAddress, 7011, Int16, 500, Registers, True
-// --- 小时产能统计 ---
-UpperFlipper, 127.0.0.3, 5000, HourlyProductTypeFlag, 7160, String, 500, Registers, False, 2
-UpperFlipper, 127.0.0.3, 5000, HourlyProjectNumber, 7100, String, 500, Registers, False, 4
-UpperFlipper, 127.0.0.3, 5000, HourlyBatch, 7200, String, 500, Registers, False, 6
-UpperFlipper, 127.0.0.3, 5000, HourlyAnodeType, 7130, String, 500, Registers, False, 2
-UpperFlipper, 127.0.0.3, 5000, HourlyMaterialCategory, 7130, String, 500, Registers, False, 2
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H01, 780, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H02, 782, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H03, 784, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H04, 786, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H05, 788, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H06, 790, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H07, 792, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H08, 794, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H09, 796, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H10, 798, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H11, 800, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H12, 802, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H13, 810, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H14, 812, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H15, 814, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H16, 816, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H17, 818, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H18, 820, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H19, 822, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H20, 824, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H21, 826, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H22, 828, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H23, 830, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacity_H24, 832, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacityHelper1, 4230, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyCapacityHelper2, 530, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyStandbyTime, 4546, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyFaultTime, 4458, Int32, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyFaultCount, 4460, Int16, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyMixCount, 4461, Int16, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlyScanNGCount, 4462, Int16, 500, Registers, False
-UpperFlipper, 127.0.0.3, 5000, HourlySystemFeedbackCount, 4463, Int16, 500, Registers, False
-
-// ==========================================
-// 4. 下翻转台 (LowerFlipper)
-// ==========================================
-// --- 基础信息 ---
-LowerFlipper, 127.0.0.3, 5000, DeviceStatus, 7006, Int16, 100, Registers, False
-LowerFlipper, 127.0.0.3, 5000, TotalCapacity, 596, Int16, 100, Registers, False
-LowerFlipper, 127.0.0.3, 5000, ProjectNumber, 2830, String, 100, Registers, False, 4
-LowerFlipper, 127.0.0.3, 5000, ProductCategory, 2835, String, 100, Registers, False, 2
-LowerFlipper, 127.0.0.3, 5000, AnodeType, 2837, String, 100, Registers, False, 4
-LowerFlipper, 127.0.0.3, 5000, ProductColor, 2840, String, 100, Registers, False, 4
-LowerFlipper, 127.0.0.3, 5000, MaterialCategory, 2843, String, 100, Registers, False, 4
-LowerFlipper, 127.0.0.3, 5000, SandblastingLine, 2846, String, 100, Registers, False, 4
-// --- 故障信号 ---
-LowerFlipper, 127.0.0.3, 5000, SensorFault, 15292, Bool, 100, Coils, False
-LowerFlipper, 127.0.0.3, 5000, ComponentFault, 15293, Bool, 100, Coils, False
-LowerFlipper, 127.0.0.3, 5000, TraceCommError, 15294, Bool, 100, Coils, False
-LowerFlipper, 127.0.0.3, 5000, HMI_DataExchangeFault, 15295, Bool, 100, Coils, False
-LowerFlipper, 127.0.0.3, 5000, Robot_DataExchangeFault, 15296, Bool, 100, Coils, False
-// --- 触发式读取 (数据 + 触发地址) ---
-LowerFlipper, 127.0.0.3, 5000, FixtureCodeTriggerRead, 5070, String, 500, Registers, True, 4
-LowerFlipper, 127.0.0.3, 5000, TriggerAddress, 7015, Int16, 500, Registers, True
-LowerFlipper, 127.0.0.3, 5000, ReturnAddress, 7016, Int16, 500, Registers, True
-// --- 小时产能统计 ---
-LowerFlipper, 127.0.0.3, 5000, HourlyProductTypeFlag, 6850, String, 500, Registers, False, 2
-LowerFlipper, 127.0.0.3, 5000, HourlyProjectNumber, 2830, String, 500, Registers, False, 4
-LowerFlipper, 127.0.0.3, 5000, HourlyBatch, 2820, String, 500, Registers, False, 6
-LowerFlipper, 127.0.0.3, 5000, HourlyAnodeType, 2837, String, 500, Registers, False, 2
-LowerFlipper, 127.0.0.3, 5000, HourlyMaterialCategory, 2843, String, 500, Registers, False, 2
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H01, 530, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H02, 532, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H03, 534, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H04, 536, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H05, 538, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H06, 540, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H07, 542, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H08, 544, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H09, 546, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H10, 548, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H11, 550, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H12, 552, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H13, 560, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H14, 562, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H15, 564, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H16, 566, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H17, 568, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H18, 570, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H19, 572, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H20, 574, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H21, 576, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H22, 578, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H23, 580, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacity_H24, 582, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacityHelper1, 4230, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyCapacityHelper2, 530, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyStandbyTime, 4298, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyFaultTime, 4764, Int32, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyFaultCount, 4766, Int16, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyMixCount, 4767, Int16, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlyScanNGCount, 6980, Int16, 500, Registers, False
-LowerFlipper, 127.0.0.3, 5000, HourlySystemFeedbackCount, 4769, Int16, 500, Registers, False
-
-
-// ==========================================
-// 5. 下料机B (DropModuleB)
-// ==========================================
-// --- 基础状态与项目信息 ---
-DropModuleB, 192.168.1.10, 5000, DeviceStatus, 7004, Int16, 100, Registers, False
-DropModuleB, 192.168.1.10, 5000, TotalCapacity, 6090, Int16, 100, Registers, False
-DropModuleB, 192.168.1.10, 5000, ProjectNumber, 7400, String, 100, Registers, False, 4
-DropModuleB, 192.168.1.10, 5000, ProductCategory, 7410, String, 100, Registers, False, 2
-DropModuleB, 192.168.1.10, 5000, AnodeType, 7420, String, 100, Registers, False, 4
-DropModuleB, 192.168.1.10, 5000, ProductColor, 7425, String, 100, Registers, False, 4
-DropModuleB, 192.168.1.10, 5000, MaterialCategory, 7430, String, 100, Registers, False, 4
-DropModuleB, 192.168.1.10, 5000, SandblastingLine, 7435, String, 100, Registers, False, 4
-// --- 故障信号 ---
-DropModuleB, 192.168.1.10, 5000, SensorFault, 15292, Bool, 100, Coils, False
-DropModuleB, 192.168.1.10, 5000, ComponentFault, 15293, Bool, 100, Coils, False
-DropModuleB, 192.168.1.10, 5000, TraceCommError, 15294, Bool, 100, Coils, False
-DropModuleB, 192.168.1.10, 5000, MasterCommError, 15295, Bool, 100, Coils, False
-
-// --- 小时产能统计 (D6700起始) ---
-DropModuleB, 192.168.1.10, 5000, HourlyProjectNumber, 7400, String, 500, Registers, False, 4
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H01, 6700, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H02, 6702, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H03, 6704, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H04, 6706, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H05, 6708, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H06, 6710, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H07, 6712, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H08, 6714, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H09, 6716, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H10, 6718, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H11, 6720, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H12, 6722, Int32, 500, Registers, False
-// --- 数组第二部分 (D6730起始) ---
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H13, 6730, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H14, 6732, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H15, 6734, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H16, 6736, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H17, 6738, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H18, 6740, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H19, 6742, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H20, 6744, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H21, 6746, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H22, 6748, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H23, 6750, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyCapacity_H24, 6752, Int32, 500, Registers, False
-
-// --- 其他小时统计数据 ---
-DropModuleB, 192.168.1.10, 5000, HourlyStandbyTime, 6766, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyFaultTime, 6966, Int32, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyFaultCount, 6998, Int16, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlySystemNGCount, 4752, Int16, 500, Registers, False
-DropModuleB, 192.168.1.10, 5000, HourlyMaterialLoss, 6999, Int16, 500, Registers, False
+// --- Peripheral Status (周边墩子状态) ---,,,,,,,,,
+PLC_Peripheral,10.120.93.89,502, FeedStation1Status,1520, Bool,500, Coils, True,
+PLC_Peripheral,10.120.93.89,502, FeedStation2Status,1521, Bool,500, Coils, True,
+PLC_Peripheral,10.120.93.89,502, FeedStation3Status,1522, Bool,500, Coils, True,
+PLC_Peripheral,10.120.93.89,502, HangerOkStation1Status,1523, Bool,500, Coils, False,
+PLC_Peripheral,10.120.93.89,502, HangerOkStation2Status,1524, Bool,500, Coils, False,
+PLC_Peripheral,10.120.93.89,502, HangerNgStationStatus,1525, Bool,500, Coils, False,
+,,,,,,,,,
+// --- Robot Status (机械手状态) ---,,,,,,,,,
+PLC_Robot,10.120.93.89,502, ProductRobotStatus,701, Int16,500, Registers, True,
+PLC_Robot,10.120.93.89,502, HangerRobotStatus,702, Int16,500, Registers, True,
+,,,,,,,,,
+// --- Feeder & Flipper Status/Capacity (供料机与翻转台) ---,,,,,,,,,
+PLC_Feeder_A,10.120.93.87,502, FeederAStatus,7004, Int16,500, Registers, True,
+PLC_Feeder_A,10.120.93.87,502, FeederACapacity,7500, Int32,1000, Registers, True,
+PLC_Feeder_B,10.120.93.88,502, FeederBStatus,7004, Int16,500, Registers, True,
+PLC_Feeder_B,10.120.93.88,502, FeederBCapacity,7500, Int32,1000, Registers, True,
+PLC_Flipper,10.120.93.89,502, FlipperStatus,701, Int16,500, Registers, True,
+PLC_Flipper,10.120.93.89,502, FlipperCapacity,7500, Int32,1000, Registers, True,
+,,,,,,,,,
+// --- 上位机设定信息至PLC (配方) ---,,,,,,,,,
+// 供料机A,,,,,,,,,
+PLC_Feeder_A,10.120.93.87,502, A_产品项目号(12Byte),7400, String,1000, Registers, False,6
+PLC_Feeder_A,10.120.93.87,502, A_产品类型(12Byte),7410, String,1000, Registers, False,6
+PLC_Feeder_A,10.120.93.87,502, A_阳极类型(一阳/二阳),7420, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_产品颜色(12Byte),7425, String,1000, Registers, False,6
+PLC_Feeder_A,10.120.93.87,502, A_原料类别(12Byte),7430, String,1000, Registers, False,6
+PLC_Feeder_A,10.120.93.87,502, A_喷砂/高亮预留(12Byte),7435, String,1000, Registers, False,6
+// 上挂翻转台 (假设格式同上),,,,,,,,,
+PLC_Flipper,10.120.93.89,502, 翻转台_产品项目号,1020, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, 翻转台_产品类型,1030, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, 翻转台_阳极类型,1040, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_产品颜色,1050, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, 翻转台_原料类别,1060, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, 翻转台_预留,1070, String,1000, Registers, False,6
+,,,,,,,,,
+// --- 设备时间同步 ---,,,,,,,,,
+// 上挂翻转台,,,,,,,,,
+PLC_Flipper,10.120.93.89,502, 翻转台_年,1000, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_月,1001, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_日,1002, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_时,1003, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_分,1004, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_秒,1005, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_星期,1006, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_收到11同步,1007, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_上位机读1后写同步,1008, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, 翻转台_心跳(写11),1009, Int16,1000, Registers, True,
+// 上供料机A,,,,,,,,,
+PLC_Feeder_A,10.120.93.87,502, A_年,3460, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_月,3461, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_日,3462, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_时,3463, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_分,3464, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_秒,3465, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_星期,3466, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_心跳(M7103/15295),15295, Bool,1000, Coils, True,
+// 上供料机B,,,,,,,,,
+PLC_Feeder_B,10.120.93.88,502, B_年,3460, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_月,3461, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_日,3462, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_时,3463, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_分,3464, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_秒,3465, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_星期,3466, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_心跳(M7103/15295),15295, Bool,1000, Coils, True,
+,,,,,,,,,
+// --- 供料机A与B&翻转台故障信息监控 ---,,,,,,,,,
+// 供料机A,,,,,,,,,
+PLC_Feeder_A,10.120.93.87,502, A_传感器故障(15292),15292, Bool,1000, Coils, False,
+PLC_Feeder_A,10.120.93.87,502, A_元器件故障(15293),15293, Bool,1000, Coils, False,
+PLC_Feeder_A,10.120.93.87,502, A_与Trace通讯异常(15294),15294, Bool,1000, Coils, False,
+PLC_Feeder_A,10.120.93.87,502, A_与总控通讯异常(15295),15295, Bool,1000, Coils, False,
+// 供料机B,,,,,,,,,
+PLC_Feeder_B,10.120.93.88,502, B_传感器故障(15292),15292, Bool,1000, Coils, False,
+PLC_Feeder_B,10.120.93.88,502, B_元器件故障(15293),15293, Bool,1000, Coils, False,
+PLC_Feeder_B,10.120.93.88,502, B_与Trace通讯异常(15294),15294, Bool,1000, Coils, False,
+PLC_Feeder_B,10.120.93.88,502, B_与总控通讯异常(15295),15295, Bool,1000, Coils, False,
+// 翻转台,,,,,,,,,
+PLC_Flipper,10.120.93.89,502, Flip_感应器故障,1500, Bool,1000, Coils, False,
+PLC_Flipper,10.120.93.89,502, Flip_元器件故障,1501, Bool,1000, Coils, False,
+PLC_Flipper,10.120.93.89,502, Flip_Trace通讯故障,1502, Bool,1000, Coils, False,
+PLC_Flipper,10.120.93.89,502, Flip_上位机数据交互故障,1503, Bool,1000, Coils, False,
+PLC_Flipper,10.120.93.89,502, Flip_机械手数据交互故障,1504, Bool,1000, Coils, False,
+PLC_Flipper,10.120.93.89,502, Flip_门禁被触发,1505, Bool,1000, Coils, False,
+PLC_Flipper,10.120.93.89,502, Flip_安全光栅被触发,1506, Bool,1000, Coils, False,
+PLC_Flipper,10.120.93.89,502, Flip_急停,1507, Bool,1000, Coils, True,
+PLC_Flipper,10.120.93.89,502, Flip_扫码枪通讯故障,1508, Bool,1000, Coils, False,
+,,,,,,,,,
+// --- 供料机A与B产品码读取 ---,,,,,,,,,
+// 供料机A,,,,,,,,,
+PLC_Feeder_A,10.120.93.87,502, A_产品码(104Byte),1100, String,100, Registers, False,8
+PLC_Feeder_A,10.120.93.87,502, A_触发,7010, Int16,100, Registers, True,
+PLC_Feeder_A,10.120.93.87,502, A_返回结果,7011, Int16,100, Registers, True,
+PLC_Feeder_A,10.120.93.87,502, A_清零,7012, Int16,100, Registers, True,
+// 供料机B,,,,,,,,,
+PLC_Feeder_B,10.120.93.88,502, B_产品码(104Byte),1100, String,100, Registers, False,8
+PLC_Feeder_B,10.120.93.88,502, B_触发,7010, Int16,100, Registers, True,
+PLC_Feeder_B,10.120.93.88,502, B_返回结果,7011, Int16,100, Registers, True,
+PLC_Feeder_B,10.120.93.88,502, B_清零,7012, Int16,100, Registers, True,
+,,,,,,,,,
+// --- 上挂翻转台产品码和挂具码读取 ---,,,,,,,,,
+// 第一组A面,,,,,,,,,
+PLC_Flipper,10.120.93.89,502, Flip_A_产品码(168Int),2020, String,500, Registers, False,168
+PLC_Flipper,10.120.93.89,502, Flip_A_挂具码(7Int),2000, String,500, Registers, False,7
+PLC_Flipper,10.120.93.89,502, Flip_A_产品位置,1340, String,500, Registers, False,1
+PLC_Flipper,10.120.93.89,502, Flip_A_产品项目号,1300, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_A_原料类别,1310, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_A_阳极类型,1320, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_A_颜色,1330, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_触发,720, Int16,200, Registers, True,
+PLC_Flipper,10.120.93.89,502, Flip_返回结果,721, Int16,200, Registers, True,
+PLC_Flipper,10.120.93.89,502, Flip_清零,722, Int16,200, Registers, True,
+// 第一组B面,,,,,,,,,
+PLC_Flipper,10.120.93.89,502, Flip_B_产品码(168Int),2188, String,500, Registers, False,168
+PLC_Flipper,10.120.93.89,502, Flip_B_挂具码(7Int),2000, String,500, Registers, False,7
+PLC_Flipper,10.120.93.89,502, Flip_B_产品位置,1342, String,500, Registers, False,1
+PLC_Flipper,10.120.93.89,502, Flip_B_产品项目号,1300, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_B_原料类别,1310, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_B_阳极类型,1320, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_B_颜色,1330, String,500, Registers, False,6
+,,,,,,,,,
+// --- 供料机A与B小时产能触发 ---,,,,,,,,,
+// 供料机A,,,,,,,,,
+PLC_Feeder_A,10.120.93.87,502, A_产能_产品项目号,7400, String,1000, Registers, False,6
+PLC_Feeder_A,10.120.93.87,502, A_产能_产品类型,7410, String,1000, Registers, False,6
+PLC_Feeder_A,10.120.93.87,502, A_产能,6764, Int32,1000, Registers, True,
+PLC_Feeder_A,10.120.93.87,502, A_待机时间MIN,6766, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_故障时间MIN,6966, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_故障次数,6998, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_系统NG数量,4752, Int16,1000, Registers, False,
+PLC_Feeder_A,10.120.93.87,502, A_物料丢失,6999, Int16,1000, Registers, False,
+// 供料机B,,,,,,,,,
+PLC_Feeder_B,10.120.93.88,502, B_产能_产品项目号,7400, String,1000, Registers, False,6
+PLC_Feeder_B,10.120.93.88,502, B_产能_产品类型,7410, String,1000, Registers, False,6
+PLC_Feeder_B,10.120.93.88,502, B_产能,6764, Int32,1000, Registers, True,
+PLC_Feeder_B,10.120.93.88,502, B_待机时间MIN,6766, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_故障时间MIN,6966, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_故障次数,6998, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_系统NG数量,4752, Int16,1000, Registers, False,
+PLC_Feeder_B,10.120.93.88,502, B_物料丢失,6999, Int16,1000, Registers, False,
+,,,,,,,,,
+// --- 翻转台小时产能触发 ---,,,,,,,,,
+PLC_Flipper,10.120.93.89,502, Flip_产能_产品项目号,1200, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_产能_产品类型,1210, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_产能_批次,1220, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_产能_阳极类型,1230, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_产能_原料类别,1240, String,1000, Registers, False,6
+PLC_Flipper,10.120.93.89,502, Flip_产能DINT,1100, Int32,1000, Registers, True,
+PLC_Flipper,10.120.93.89,502, Flip_待机时间MIN,1110, Int32,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, Flip_故障时间MIN,1120, Int32,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, Flip_故障次数,1130, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, Flip_混料数量,1140, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, Flip_扫码NG数量,1150, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, Flip_系统反馈数量,1160, Int16,1000, Registers, False,
+PLC_Flipper,10.120.93.89,502, Flip_产能_触发,730, Int16,200, Registers, True,
+PLC_Flipper,10.120.93.89,502, Flip_产能_返回结果,731, Int16,200, Registers, True,
+PLC_Flipper,10.120.93.89,502, Flip_产能_清零,732, Int16,200, Registers, True,
+PLC_Flipper,10.120.93.89,502, Flip_转产触发,733, Int16,200, Registers, True,

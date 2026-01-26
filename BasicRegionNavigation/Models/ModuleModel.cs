@@ -64,6 +64,17 @@ namespace BasicRegionNavigation.Models
                     _currentProductInfo.UpdateValue(category, data);
                     break;
 
+                //产品饼图
+                case ModuleDataCategory.UpPieInfo:
+                case ModuleDataCategory.DnPieInfo:
+                    _currentPieInfo.UpdateValue(category, data);
+                    break;
+                //柱状图
+                case ModuleDataCategory.UpColumnSeries:
+                case ModuleDataCategory.DnColumnSeries:
+                    _currentColumnInfo.UpdateValue(category, data);
+                    break;
+
                 default:
                     // 可以在这里记录未处理的类别日志
                     Console.WriteLine($"未识别的数据类别: {category}");
@@ -84,31 +95,40 @@ namespace BasicRegionNavigation.Models
         // 默认颜色提取
         private static readonly Brush DefaultColor = new SolidColorBrush(Color.FromArgb(255, 0, 235, 246));
 
-        [ObservableProperty] private Brush _feedLift1Status = DefaultColor;
-        [ObservableProperty] private Brush _feedLift2Status = DefaultColor;
-        [ObservableProperty] private Brush _hangOkSensor = DefaultColor;
-        [ObservableProperty] private Brush _dropNgSensor = DefaultColor;
-        [ObservableProperty] private Brush _dropOkSensor = DefaultColor;
-        [ObservableProperty] private Brush _downloadLift1Status = DefaultColor;
-        [ObservableProperty] private Brush _downloadLift2Status = DefaultColor;
-        [ObservableProperty] private Brush _loadProductArmStatus = DefaultColor;
-        [ObservableProperty] private Brush _loadHangStatus = DefaultColor;
-        [ObservableProperty] private Brush _dropProductArmStatus = DefaultColor;
-        [ObservableProperty] private Brush _dropHangStatus = DefaultColor;
-        [ObservableProperty] private Brush _unLoadModule1Status = DefaultColor;
-        [ObservableProperty] private Brush _unLoadModule2Status = DefaultColor;
-        [ObservableProperty] private Brush _dropModule1Status = DefaultColor;
-        [ObservableProperty] private Brush _dropModule2Status = DefaultColor;
+        // --- 1. 周边墩子 (Peripheral) ---
+        // 上挂工位 1, 2, 3
+        [ObservableProperty] private Brush _feedStation1Status = DefaultColor;
+        [ObservableProperty] private Brush _feedStation2Status = DefaultColor;
+        [ObservableProperty] private Brush _feedStation3Status = DefaultColor;
 
-        [ObservableProperty] private int _unLoadModule1Capacity = -1;
-        [ObservableProperty] private int _unLoadModule2Capacity = -1;
-        [ObservableProperty] private int _dropModule1Capacity = -1;
-        [ObservableProperty] private int _dropModule2Capacity = -1;
+        // OK/NG 挂具工位
+        // 修正：不再叫 Sensor，改叫 Station，区分 1 和 2
+        [ObservableProperty] private Brush _hangerOkStation1Status = DefaultColor;
+        [ObservableProperty] private Brush _hangerOkStation2Status = DefaultColor;
+        [ObservableProperty] private Brush _hangerNgStationStatus = DefaultColor;
 
-        [ObservableProperty] private Brush _upFlipperTableStatus = DefaultColor;
-        [ObservableProperty] private Brush _dnFlipperTableStatus = DefaultColor;
-        [ObservableProperty] private int _upFlipperTableCapacity = -1;
-        [ObservableProperty] private int _dnFlipperTableCapacity = -1;
+
+        // --- 2. 机械手 (Robot) ---
+        // 上产品小机械手
+        [ObservableProperty] private Brush _productRobotStatus = DefaultColor;
+        // 上挂具大机械手
+        [ObservableProperty] private Brush _hangerRobotStatus = DefaultColor;
+
+
+        // --- 3. 供料机 (Feeder A/B) ---
+        // A 设备 (原 UnLoadModule1)
+        [ObservableProperty] private Brush _feederAStatus = DefaultColor;
+        [ObservableProperty] private int _feederACapacity = -1;
+
+        // B 设备 (原 UnLoadModule2)
+        [ObservableProperty] private Brush _feederBStatus = DefaultColor;
+        [ObservableProperty] private int _feederBCapacity = -1;
+
+
+        // --- 4. 翻转台 (Flipper) ---
+        // 翻转台 (原 UpFlipper)
+        [ObservableProperty] private Brush _flipperStatus = DefaultColor;
+        [ObservableProperty] private int _flipperCapacity = -1;
         // --- 1. 颜色转换规则 (集中管理) ---
         private Brush ConvertIntToBrush(int value)
         {
@@ -152,8 +172,7 @@ namespace BasicRegionNavigation.Models
                 string key = kvp.Key;   // 订阅时传入的 field (例如 "UnLoadModule1")
                 int rawValue = kvp.Value;
 
-                // 拼凑目标属性名: UnLoadModule1 + Status
-                string targetPropName = $"{key}{suffix}";
+                string targetPropName = $"{key}";
 
                 PropertyInfo targetProp = type.GetProperty(targetPropName);
 
@@ -178,12 +197,6 @@ namespace BasicRegionNavigation.Models
         }
         public partial class CurrentPieInfo : ObservableObject
         {
-            public CurrentPieInfo()
-            {
-                // 构造函数中直接调用类内部的静态方法初始化
-                UpdatePieData(UpMyPieSeries, new[] { 1, 1, 1, 1, 1 }, new[] { "Maria", "Susan", "Charles", "Fiona", "George" });
-                UpdatePieData(DnMyPieSeries, new[] { 1, 1, 1, 1, 1 }, new[] { "Maria", "Susan", "Charles", "Fiona", "George" });
-            }
 
             [ObservableProperty]
             private ObservableCollection<ISeries> _upMyPieSeries = new();
