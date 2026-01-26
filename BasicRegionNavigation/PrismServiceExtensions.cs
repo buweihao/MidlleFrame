@@ -31,6 +31,10 @@ namespace BasicRegionNavigation.Helper
             // 4. 【关键】注册后台任务 (BackgroundService)
             // 注意：在 Prism 中，这里只是注册了类型，不会自动运行，需要后续手动 Start
             services.AddSingleton<HourlyDataCollectionService>();
+
+
+            services.AddSingleton<IModbusService, ModbusService>();
+
         }
 
         private static void RegisterModbus(IServiceCollection services)

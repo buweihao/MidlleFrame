@@ -64,6 +64,8 @@ namespace BasicRegionNavigation.ViewModels
 
             // 2. 【核心】单一入口监听
             _modbusService.OnModuleDataChanged += HandleDataChanged;
+
+            InitializeSubscriptions(_modbusService);
         }
         // 在 MainViewModel 或初始化逻辑中
         public void InitializeSubscriptions(IModbusService modbusService)
