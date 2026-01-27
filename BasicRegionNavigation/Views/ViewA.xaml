@@ -80,8 +80,8 @@
                            Series="{Binding CurrentModule.CurrentPieInfo.UpMyPieSeries}" />
 
         <con:CapacityChartCard Title="当班上挂产能" Grid.Row="3" Grid.Column="2"
-                               Labels="{Binding CurrentModule.CurrentColumnInfo.XAxes}"
-                               Values="{Binding CurrentModule.CurrentColumnInfo.CSeriesUp}"/>
+                       XAxes="{Binding CurrentModule.CurrentColumnInfo.XAxes}"
+                       Series="{Binding CurrentModule.CurrentColumnInfo.CSeriesUp}"/>
         <!-- 边框在下层 -->
         <Border x:Name="PicBorder"
                 Grid.Column="0"
@@ -203,7 +203,7 @@
                                Foreground="White"
                                Margin="10,5,0,6" />
                 </Border>
-                <DataGrid ItemsSource="{Binding CurrentModule.currentWarningInfo.AlarmList}"
+                <DataGrid ItemsSource="{Binding CurrentModule.CurrentWarningInfo.AlarmList}"
                           Grid.Row="1"
                           AutoGenerateColumns="False"
                           HeadersVisibility="Column"

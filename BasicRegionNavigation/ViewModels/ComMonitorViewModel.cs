@@ -1,27 +1,116 @@
 ﻿using BasicRegionNavigation.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Core; // 假设这是你的 Global 所在的命名空间
-using Dm;
+using Core;
+using MyModbus; // 引用你的 MyModbus 库
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using System.Windows.Threading; // 引入 DispatcherTimer
 
 namespace BasicRegionNavigation.ViewModels
 {
     internal partial class ComMonitorViewModel : ObservableObject
     {
         private readonly IConfigService _configService;
-        // -----------------------------------------------------------------------
-        // 模组 1 定义
-        // -----------------------------------------------------------------------
-        #region Model 1
-        [ObservableProperty]
-        private string _model1RawType;
+        private readonly DataCollectionEngine _engine;
+        private readonly DispatcherTimer _monitorTimer;
 
+        // 定义颜色常量，方便统一修改
+        private static readonly Brush ColorConnected = Brushes.LimeGreen; // 或 Brushes.Green
+        private static readonly Brush ColorDisconnected = Brushes.Gray;   // 或 Brushes.Red
+
+        public ComMonitorViewModel(IConfigService configService, DataCollectionEngine engine)
+        {
+            _configService = configService;
+            _engine = engine;
+
+            // 1. 初始化标题
+            InitializeTitles();
+
+            // 2. 初始化定时器 (替代原本复杂的 Task 循环)
+            _monitorTimer = new DispatcherTimer
+            {
+                // 建议 1秒刷新一次即可，UI 不需要像数据采集那样毫秒级刷新
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _monitorTimer.Tick += OnMonitorTick;
+            _monitorTimer.Start();
+        }
+
+        private void InitializeTitles()
+        {
+            Model1RawType = $"模组1 {_configService.GetConfigValue("1_备注")}";
+            Model2RawType = $"模组2 {_configService.GetConfigValue("2_备注")}";
+            Model3RawType = $"模组3 {_configService.GetConfigValue("3_备注")}";
+            Model4RawType = $"模组4 {_configService.GetConfigValue("4_备注")}";
+            Model5RawType = $"模组5 {_configService.GetConfigValue("5_备注")}";
+            Model6RawType = $"模组6 {_configService.GetConfigValue("6_备注")}";
+        }
+
+        // 定时器回调：在 UI 线程执行，直接赋值属性即可
+        private void OnMonitorTick(object? sender, EventArgs e)
+        {
+            UpdateModel1Status();
+            UpdateModel2Status();
+            UpdateModel3Status();
+            UpdateModel4Status();
+            UpdateModel5Status();
+            UpdateModel6Status();
+        }
+
+        // =======================================================================
+        // 状态更新逻辑
+        // =======================================================================
+
+        // 辅助方法：根据设备ID获取颜色
+        private Brush GetStatusBrush(string deviceId)
+        {
+            // 调用引擎的新方法查询在线状态
+            bool isOnline = _engine.IsDeviceConnected(deviceId);
+            return isOnline ? ColorConnected : ColorDisconnected;
+        }
+
+        private void UpdateModel1Status()
+        {
+            // 假设：config.csv 中定义的 DeviceID 分别是 "PLC_Feeder_A", "PLC_Feeder_B" 等
+            // 你需要根据实际的业务逻辑，将 UI 的线条对应到具体的 PLC DeviceID
+
+            // 示例：假设上料1对应 PLC_Feeder_A
+            Model1LineColorUpLoad1 = GetStatusBrush("PLC_Feeder_A");
+
+            // 示例：假设翻转台对应 PLC_Flipper
+            Model1LineColorAround = GetStatusBrush("PLC_Flipper");
+
+            // 如果某些线条没有对应的独立PLC，而是共享同一个PLC的状态：
+            Model1LineColorUpLoad2 = Model1LineColorUpLoad1;
+
+            // ...以此类推，根据实际 mapping 填写
+            Model1LineColorDnLoad1 = GetStatusBrush("PLC_Feeder_B");
+            Model1LineColorDnLoad2 = Model1LineColorDnLoad1;
+            Model1LineColorBatch = Model1LineColorDnLoad1;
+        }
+
+        private void UpdateModel2Status()
+        {
+            // 这里填写模组2对应的设备ID
+            // Model2LineColorUpLoad1 = GetStatusBrush("Device_ID_For_Model2_Up");
+            // ...
+        }
+
+        private void UpdateModel3Status() { /* ... */ }
+        private void UpdateModel4Status() { /* ... */ }
+        private void UpdateModel5Status() { /* ... */ }
+        private void UpdateModel6Status() { /* ... */ }
+
+
+        // =======================================================================
+        // 属性定义 (保持原样以兼容 XAML)
+        // =======================================================================
+
+        #region Model 1
+        [ObservableProperty] private string _model1RawType;
         [ObservableProperty] private Brush _model1LineColorUpLoad1 = Brushes.Gray;
         [ObservableProperty] private Brush _model1LineColorUpLoad2 = Brushes.Gray;
         [ObservableProperty] private Brush _model1LineColorDnLoad1 = Brushes.Gray;
@@ -30,13 +119,8 @@ namespace BasicRegionNavigation.ViewModels
         [ObservableProperty] private Brush _model1LineColorAround = Brushes.Gray;
         #endregion
 
-        // -----------------------------------------------------------------------
-        // 模组 2 定义
-        // -----------------------------------------------------------------------
         #region Model 2
-        [ObservableProperty]
-        private string _model2RawType;
-
+        [ObservableProperty] private string _model2RawType;
         [ObservableProperty] private Brush _model2LineColorUpLoad1 = Brushes.Gray;
         [ObservableProperty] private Brush _model2LineColorUpLoad2 = Brushes.Gray;
         [ObservableProperty] private Brush _model2LineColorDnLoad1 = Brushes.Gray;
@@ -45,13 +129,8 @@ namespace BasicRegionNavigation.ViewModels
         [ObservableProperty] private Brush _model2LineColorAround = Brushes.Gray;
         #endregion
 
-        // -----------------------------------------------------------------------
-        // 模组 3 定义
-        // -----------------------------------------------------------------------
         #region Model 3
-        [ObservableProperty]
-        private string _model3RawType;
-
+        [ObservableProperty] private string _model3RawType;
         [ObservableProperty] private Brush _model3LineColorUpLoad1 = Brushes.Gray;
         [ObservableProperty] private Brush _model3LineColorUpLoad2 = Brushes.Gray;
         [ObservableProperty] private Brush _model3LineColorDnLoad1 = Brushes.Gray;
@@ -60,13 +139,8 @@ namespace BasicRegionNavigation.ViewModels
         [ObservableProperty] private Brush _model3LineColorBatch = Brushes.Gray;
         #endregion
 
-        // -----------------------------------------------------------------------
-        // 模组 4 定义
-        // -----------------------------------------------------------------------
         #region Model 4
-        [ObservableProperty]
-        private string _model4RawType;
-
+        [ObservableProperty] private string _model4RawType;
         [ObservableProperty] private Brush _model4LineColorUpLoad1 = Brushes.Gray;
         [ObservableProperty] private Brush _model4LineColorUpLoad2 = Brushes.Gray;
         [ObservableProperty] private Brush _model4LineColorDnLoad1 = Brushes.Gray;
@@ -75,13 +149,8 @@ namespace BasicRegionNavigation.ViewModels
         [ObservableProperty] private Brush _model4LineColorBatch = Brushes.Gray;
         #endregion
 
-        // -----------------------------------------------------------------------
-        // 模组 5 定义
-        // -----------------------------------------------------------------------
         #region Model 5
-        [ObservableProperty]
-        private string _model5RawType;
-
+        [ObservableProperty] private string _model5RawType;
         [ObservableProperty] private Brush _model5LineColorUpLoad1 = Brushes.Gray;
         [ObservableProperty] private Brush _model5LineColorUpLoad2 = Brushes.Gray;
         [ObservableProperty] private Brush _model5LineColorDnLoad1 = Brushes.Gray;
@@ -90,13 +159,8 @@ namespace BasicRegionNavigation.ViewModels
         [ObservableProperty] private Brush _model5LineColorBatch = Brushes.Gray;
         #endregion
 
-        // -----------------------------------------------------------------------
-        // 模组 6 定义
-        // -----------------------------------------------------------------------
         #region Model 6
-        [ObservableProperty]
-        private string _model6RawType;
-
+        [ObservableProperty] private string _model6RawType;
         [ObservableProperty] private Brush _model6LineColorUpLoad1 = Brushes.Gray;
         [ObservableProperty] private Brush _model6LineColorUpLoad2 = Brushes.Gray;
         [ObservableProperty] private Brush _model6LineColorDnLoad1 = Brushes.Gray;
@@ -105,146 +169,11 @@ namespace BasicRegionNavigation.ViewModels
         [ObservableProperty] private Brush _model6LineColorBatch = Brushes.Gray;
         #endregion
 
-        // -----------------------------------------------------------------------
-        // 内部状态与任务管理
-        // -----------------------------------------------------------------------
-
-        // 这是一个 Field，不需要通知
-        public int Modules = Global.Modules;
-
-        private CancellationTokenSource cts;
-        private List<Task> loopTasks = new List<Task>();
-        // int times = 1; // 似乎未被使用，注释掉或移除
-
-        public ComMonitorViewModel(IConfigService configService)
-        {
-            _configService = configService;
-
-            // Initializing properties using the injected service
-            Model1RawType = $"模组1 {_configService.GetConfigValue("1_备注")}";
-            Model2RawType = $"模组2 {_configService.GetConfigValue("2_备注")}";
-            Model3RawType = $"模组3 {_configService.GetConfigValue("3_备注")}";
-            Model4RawType = $"模组4 {_configService.GetConfigValue("4_备注")}";
-            Model5RawType = $"模组5 {_configService.GetConfigValue("5_备注")}";
-            Model6RawType = $"模组6 {_configService.GetConfigValue("6_备注")}";
-            // 启动监控任务
-            _ = RestartLoopTask();
-
-            // 启动一个后台任务监控全局 Modules 数量变化
-            Task.Run(async () =>
-            {
-                while (true)
-                {
-                    await Task.Delay(1000);
-
-                    if (Global.Modules != Modules)
-                    {
-                        Modules = Global.Modules;
-                        _ = RestartLoopTask();
-                    }
-                }
-            });
-        }
-
-        public async Task RestartLoopTask()
-        {
-            // 如果已经在运行，先取消
-            if (cts != null)
-            {
-                cts.Cancel();
-                // 等待所有任务完成（安全退出）
-                if (loopTasks.Count > 0)
-                {
-                    // 忽略取消异常
-                    try { await Task.WhenAll(loopTasks); } catch { }
-                }
-                cts.Dispose();
-            }
-
-            cts = new CancellationTokenSource();
-            loopTasks.Clear();
-
-            // 数据采集任务间隔
-            if (!double.TryParse(_configService.GetConfigValue("ReadMissionTimeSpan"), out double spanMs))
-            {
-                spanMs = 500; // 默认值，防止解析失败
-            }
-            TimeSpan timeSpan = TimeSpan.FromMilliseconds(spanMs);
-
-            loopTasks.AddRange(StartModuleLoops(Modules, IsConnectMissionAsync, timeSpan, cts.Token));
-        }
-
-        private Task[] StartModuleLoops(
-             int modules,
-             Func<int, Task> body,
-             TimeSpan period,
-             CancellationToken ct)
-        {
-            return Enumerable.Range(1, modules)
-                .Select(id => Task.Run(() => RunLoopAsync(id, body, period, ct), ct))
-                .ToArray();
-        }
-
-        private async Task RunLoopAsync(int modelNum, Func<int, Task> job, TimeSpan interval, CancellationToken token)
-        {
-            try
-            {
-                while (!token.IsCancellationRequested)
-                {
-                    try
-                    {
-                        await job(modelNum);
-                    }
-                    catch (Exception e)
-                    {
-                    }
-
-                    await Task.Delay(interval, token);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // 正常取消，不做处理
-            }
-        }
-
-        /// <summary>
-        /// 核心业务逻辑：更新 UI 绑定属性
-        /// </summary>
-        public async Task IsConnectMissionAsync(int i)
-        {
-            // 注意：这里仍然在后台线程运行。
-            // WPF 的 PropertyChanged 通常会自动调度到 UI 线程，但如果遇到跨线程异常，
-            // 可能需要 Application.Current.Dispatcher.Invoke(() => ... ) 包裹赋值操作。
-            // 既然原代码可以直接运行，这里保持原样。
-
-        }
-
-        // -----------------------------------------------------------------------
-        // 命令 (Commands)
-        // -----------------------------------------------------------------------
-
+        // 命令
         [RelayCommand]
-        private async Task InsertAsync()
+        private void Insert()
         {
-            // 这里保留你的测试代码逻辑
-            await Task.CompletedTask; // 防止警告
-
-            // 下面是你原本注释掉的代码，保留原样：
-            /*
-            bool cleared = await Global.repo_product.ClearTableAsync();
-            if (cleared)
-            {
-                Console.WriteLine("repo_product表格已清空");
-            }
-            ... (保留其余注释内容)
-            */
+            // 测试命令逻辑
         }
-
-
-        // -----------------------------------------------------------------------
-        // PLC 辅助方法 (Helpers) - 这里的代码没有变动，只是保留在类中
-        // -----------------------------------------------------------------------
-
     }
 }

@@ -22,14 +22,14 @@
 
             <!-- 图表区域 -->
             <lvc:CartesianChart Grid.Row="1"
-                                Series="{Binding ChartSeries, ElementName=root}"
-                                XAxes="{Binding ChartXAxes, ElementName=root}"
-                                YAxes="{Binding ChartYAxes, ElementName=root}"
-                                TooltipPosition="Top"
-                                Background="Transparent"
-                                ZoomMode="None"
-                                DrawMarginFrame="{x:Null}"
-                                AnimationsSpeed="00:00:00">
+                    Series="{Binding Series, ElementName=root}" 
+                    XAxes="{Binding XAxes, ElementName=root}"
+                    YAxes="{Binding YAxes, ElementName=root}"
+                    TooltipPosition="Top"
+                    Background="Transparent"
+                    ZoomMode="None"
+                    DrawMarginFrame="{x:Null}"
+                    AnimationsSpeed="00:00:00">
             </lvc:CartesianChart>
         </Grid>
     </Border>

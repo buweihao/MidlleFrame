@@ -74,7 +74,10 @@ namespace BasicRegionNavigation.Models
                 case ModuleDataCategory.DnColumnSeries:
                     _currentColumnInfo.UpdateValue(category, data);
                     break;
-
+                case ModuleDataCategory.WarningInfo:
+                    _currentWarningInfo.UpdateValue(category, data);
+                    break;
+                    
                 default:
                     // 可以在这里记录未处理的类别日志
                     Console.WriteLine($"未识别的数据类别: {category}");
@@ -292,6 +295,7 @@ namespace BasicRegionNavigation.Models
                 }
             }
         }
+
         public partial class CurrentProductInfo : ObservableObject
         {
             [ObservableProperty]
@@ -382,6 +386,7 @@ namespace BasicRegionNavigation.Models
             TextSize = 15,
             IsVisible = true,
             MinStep = 1,
+            ForceStepToMin = true
         }
             ];
 
@@ -548,16 +553,42 @@ namespace BasicRegionNavigation.Models
         {
             private readonly Dictionary<string, (string DeviceName, string Description)> _alarmConfig;
 
+            public CurrentWarningInfo()
+            {
+                // 初始化报警配置
+                // Key: 必须与 CSV 中的英文 Name 完全一致
+                // Value: (设备名称, 报警详细描述)
+                _alarmConfig = new Dictionary<string, (string DeviceName, string Description)>
+            {
+                // --- 供料机 A ---
+                { "FeederASensorFault",      ("供料机A", "传感器故障 (15292)") },
+                { "FeederAComponentFault",   ("供料机A", "元器件故障 (15293)") },
+                { "FeederATraceCommFault",   ("供料机A", "与 Trace 通讯异常") },
+                { "FeederAMasterCommFault",  ("供料机A", "与总控通讯异常") },
+
+                // --- 供料机 B ---
+                { "FeederBSensorFault",      ("供料机B", "传感器故障 (15292)") },
+                { "FeederBComponentFault",   ("供料机B", "元器件故障 (15293)") },
+                { "FeederBTraceCommFault",   ("供料机B", "与 Trace 通讯异常") },
+                { "FeederBMasterCommFault",  ("供料机B", "与总控通讯异常") },
+
+                // --- 翻转台 ---
+                { "FlipperSensorFault",            ("翻转台", "感应器故障") },
+                { "FlipperComponentFault",         ("翻转台", "元器件故障") },
+                { "FlipperTraceCommFault",         ("翻转台", "Trace 通讯故障") },
+                { "FlipperHostCommFault",          ("翻转台", "上位机数据交互故障") },
+                { "FlipperRobotCommFault",         ("翻转台", "机械手数据交互故障") },
+                { "FlipperDoorTriggered",          ("翻转台", "门禁被触发") },
+                { "FlipperSafetyCurtainTriggered", ("翻转台", "安全光栅被触发") },
+                { "FlipperEmergencyStop",          ("翻转台", "急停被按下") },
+                { "FlipperScannerCommFault",       ("翻转台", "扫码枪通讯故障") }
+            };
+            }
+
             // 前端绑定的集合
             [ObservableProperty]
             private ObservableCollection<AlarmInfo> _alarmList = new();
 
-            public CurrentWarningInfo()
-            {
-
-                // 如果需要初始测试数据（可选）
-                // AlarmList.Add(new AlarmInfo { Index = 1, Time = DateTime.Now, Device = "系统", Description = "系统初始化" });
-            }
 
             /// <summary>
             /// 统一更新入口
@@ -658,5 +689,6 @@ namespace BasicRegionNavigation.Models
                 }
             }
         }
+
     }
 }

@@ -100,10 +100,6 @@ namespace BasicRegionNavigation.Services
     {
         Status,      // 基础IO/气缸状态 (Brush)
         Capacity,    // 产量数据 (int[])
-        ProductInfo, // 产品详细信息 (ExpandoObject)
-        Warning,     // 报警信息
-        PieInfo,     // 饼图统计数据
-        ColumnInfo,    // 柱状图统计数据
         UpProductInfo,
         DnProductInfo,
         UpPieInfo,
@@ -111,6 +107,15 @@ namespace BasicRegionNavigation.Services
         UpColumnSeries,
         DnColumnSeries,
         ChartAxis,
-        WarningInfo
+        WarningInfo,
+        // 2. 双表头表格 (TwoDataTableWithHeader)
+        ProductInfoTop,    // 上表数据
+        ProductInfoBottom, // 下表数据
+                           // 3. 效能表格 (DataTableWithHeader)
+        EfficiencyData,
+
+        // 4. 故障统计图表 (CartesianChart)
+        FaultStatsSeries, // 图表数据
+        FaultStatsAxis    // 图表X轴标签(可选)
     }
 }

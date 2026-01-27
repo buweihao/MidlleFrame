@@ -69,6 +69,7 @@ namespace BasicRegionNavigation.ViewModels
             StartProductInfoSimulation();
             StartPieInfoSimulation();
             StartColumnInfoSimulation();
+            StartWarningSimulation();
         }
         // 在 MainViewModel 或初始化逻辑中
         public void InitializeSubscriptions(IModbusService modbusService)
@@ -274,6 +275,7 @@ namespace BasicRegionNavigation.ViewModels
                 }
             });
         }
+
         private void StartColumnInfoSimulation()
         {
             // 开启后台任务：模拟柱状图数据 (ColumnInfo) 及 班次切换
@@ -341,6 +343,39 @@ namespace BasicRegionNavigation.ViewModels
                             // LiveCharts 的 Axis.Labels 支持直接赋值更新
                             CurrentModule.CurrentColumnInfo.XAxes[0].Labels = labels;
                         }
+                    });
+                }
+            });
+        }
+
+        private void StartWarningSimulation()
+        {
+            Task.Run(async () =>
+            {
+                var random = new Random();
+                while (true)
+                {
+                    await Task.Delay(1000); // 3秒刷新一次
+
+                    // 构造匿名对象，属性名必须与 _alarmConfig 的 Key 一致
+                    var warningData = new
+                    {
+                        // 随机触发一些报警 (10% 概率)
+                        FeederASensorFault = random.Next(0, 10) == 0,
+                        FeederATraceCommFault = random.Next(0, 10) == 0,
+
+                        FeederBSensorFault = random.Next(0, 10) == 0,
+                        FeederBMasterCommFault = random.Next(0, 10) == 0,
+
+                        FlipperDoorTriggered = random.Next(0, 10) == 0,
+                        FlipperEmergencyStop = random.Next(0, 20) == 0, // 5% 概率急停
+                        FlipperScannerCommFault = random.Next(0, 10) == 0
+                    };
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // 推送报警数据
+                        HandleDataChanged("1", ModuleDataCategory.WarningInfo, warningData);
                     });
                 }
             });

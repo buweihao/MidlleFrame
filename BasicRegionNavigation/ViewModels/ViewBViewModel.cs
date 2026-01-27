@@ -1,5 +1,6 @@
 ﻿using BasicRegionNavigation;
 using BasicRegionNavigation.Helper;
+using BasicRegionNavigation.Models;
 using BasicRegionNavigation.Services;
 using ClosedXML.Excel;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,6 +14,7 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using Microsoft.Win32;
 using SkiaSharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -28,6 +30,66 @@ namespace BasicRegionNavigation.ViewModels
     // 2. 继承 ObservableObject
     public partial class ViewBViewModel : ObservableObject, INavigationAware
     {
+        // 模组缓存
+        private readonly ConcurrentDictionary<string, ModuleModelB> _modulesCache = new ConcurrentDictionary<string, ModuleModelB>();
+        [ObservableProperty]
+        private ModuleModelB _currentModule;
+        public ViewBViewModel(IConfigService configService)
+        {
+            _configService = configService;
+
+            InitializeModules(new[] { "1", "2" });
+            OnModulesChanged(2);
+
+            StartPieInfoSimulation();
+            StartProductInfoBSimulation();
+            StartEfficiencyAndFaultSimulation();
+        }
+        private void InitializeModules(string[] ids)
+        {
+            foreach (var id in ids)
+            {
+                var model = new ModuleModelB(id);
+                _modulesCache.TryAdd(id, model);
+            }
+
+            // 默认显示第一个
+            if (ids.Length > 0) CurrentModule = _modulesCache[ids[0]];
+        }
+
+        // 3. 交通指挥：收到数据 -> 查找字典 -> 定点更新
+        private void HandleDataChanged(string moduleId, ModuleDataCategory category, object data)
+        {
+            if (_modulesCache.TryGetValue(moduleId, out var targetModule))
+            {
+                targetModule.DispatchData(category, data);
+            }
+            else
+            {
+                // 收到了一个不存在的模组ID的数据，忽略或记录日志
+            }
+        }
+
+        // 切换模组的方法 (供前端 ComboBox 绑定)
+        public void SwitchModule(string newId)
+        {
+            if (_modulesCache.TryGetValue(newId, out var model))
+            {
+                CurrentModule = model;
+            }
+        }
+
+        partial void OnModelNumChanged(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+
+            // 解析 ID：如果下拉框内容是 "模组1"，我们需要提取 "1"
+            // 假设您的 Key 是纯数字字符串 "1", "2"
+            string id = value.Replace("模组", "").Trim();
+
+            SwitchModule(id);
+        }
+
         private readonly IConfigService _configService;
 
         // -----------------------------------------------------------------------
@@ -55,160 +117,11 @@ namespace BasicRegionNavigation.ViewModels
         #endregion
 
         // -----------------------------------------------------------------------
-        // 图表属性 (Chart Properties)
-        // -----------------------------------------------------------------------
-        #region Charts
-
-        [ObservableProperty]
-        private ISeries[] _series =
-        {
-            new ColumnSeries<double>
-            {
-                Fill = new SolidColorPaint(SKColors.Red),
-                ScalesYAt = 0,
-                Name = "Roger",
-                Values = new double[] { 20, 10, 30, 50, 30, 40 },
-                DataLabelsPaint = new SolidColorPaint(SKColors.White),
-            },
-            new ColumnSeries<double>
-            {
-                Fill = new SolidColorPaint(SKColors.Aqua),
-                ScalesYAt = 1,
-                Name = "Susan",
-                Values = new double[] { 1, 2, 3, 4, 5, 6 },
-                DataLabelsPaint = new SolidColorPaint(SKColors.White),
-            }
-        };
-
-        [ObservableProperty]
-        private Axis[] _xAxes =
-        {
-            new Axis
-            {
-                Labels = new[] { "上料机1", "上料机2", "上翻转台", "下料机1", "下料机2", "下翻转台" },
-                LabelsPaint = new SolidColorPaint(SKColors.White),
-                TextSize = 15,
-                IsVisible = true
-            }
-        };
-
-        [ObservableProperty]
-        private Axis[] _yAxes =
-        {
-            new Axis
-            {
-                MinLimit = 0,
-                LabelsPaint = new SolidColorPaint(SKColors.Red),
-                TextSize = 15,
-                Position = LiveChartsCore.Measure.AxisPosition.Start,
-                SeparatorsPaint = new SolidColorPaint(SKColors.White)
-            },
-            new Axis
-            {
-                MinLimit = 0,
-                Position = LiveChartsCore.Measure.AxisPosition.End,
-                LabelsPaint = new SolidColorPaint(SKColors.Aqua),
-                TextSize = 15,
-                SeparatorsPaint = new SolidColorPaint(SKColors.White)
-            }
-        };
-
-        // 饼图
-        [ObservableProperty] private ObservableCollection<ISeries> _upMyPieSeries = new();
-        [ObservableProperty] private ObservableCollection<ISeries> _dnMyPieSeries = new();
-
-        #endregion
-
-        // -----------------------------------------------------------------------
         // 表格数据属性 (Table Data Properties)
         // -----------------------------------------------------------------------
-        #region Table Data
-
-        // 产品生产信息表 (Columns 这种通常只读，也可以不做 ObservableProperty，保留原样即可)
-        public ObservableCollection<DataGridColumn> ProductInfoColumns { get; } = new ObservableCollection<DataGridColumn>
-        {
-            new DataGridTextColumn { Header = "项目号", Binding = new Binding("ProjectId"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "原料类别", Binding = new Binding("MaterialType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "产品类别", Binding = new Binding("AnodeType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "上料机A", Binding = new Binding("UpFeeder1"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "上料机B", Binding = new Binding("UpFeeder2"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "上料合计", Binding = new Binding("UpTotalFeederOutput"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "上翻转台", Binding = new Binding("UpTurnTable"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-        };
-
-        [ObservableProperty]
-        private string _twoDataTableWithHeaderTitle = "产品生产信息表";
-
-        public ObservableCollection<DataGridColumn> ProductInfoColumns_Down { get; } = new ObservableCollection<DataGridColumn>
-        {
-            new DataGridTextColumn { Header = "项目号", Binding = new Binding("ProjectId"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "原料类别", Binding = new Binding("MaterialType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "阳极类型", Binding = new Binding("AnodeType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "下料机A", Binding = new Binding("DnFeeder1"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "下料机B", Binding = new Binding("DnFeeder2"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "下料合计", Binding = new Binding("DnTotalFeederOutput"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "下翻转台", Binding = new Binding("DnTurnTable"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-        };
-
-        [ObservableProperty]
-        private ObservableCollection<ProductInfoTable> _productInfoData = new ObservableCollection<ProductInfoTable>
-        {
-            new ProductInfoTable { ProjectId = "CY50132", MaterialType = "UACJ", AnodeType = "一阳", UpFeeder1 = 120, UpFeeder2 = 110, UpTotalFeederOutput = 230, UpTurnTable = 5 },
-        };
-
-        [ObservableProperty]
-        private ObservableCollection<ProductInfoTable> _productInfoData_Down = new ObservableCollection<ProductInfoTable>
-        {
-            new ProductInfoTable { ProjectId = "CY50132", MaterialType = "UACJ", AnodeType = "一阳", UpFeeder1 = 120, UpFeeder2 = 110, UpTotalFeederOutput = 230, UpTurnTable = 5 },
-        };
-
-        // 设备效能表
-        public ObservableCollection<DataGridColumn> ProductEfficiencyColumns { get; } = new ObservableCollection<DataGridColumn>
-        {
-            new DataGridTextColumn { Header = "设备名称", Binding = new Binding("DeviceName"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "扫码NG", Binding = new Binding("ScanNG"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "系统反馈NG", Binding = new Binding("SystemNG"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "故障次数", Binding = new Binding("FailureCount"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "故障时间(min)", Binding = new Binding("FailureTime"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "待机时间(min)", Binding = new Binding("IdleTime"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "上挂率", Binding = new Binding("MountRate"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
-            new DataGridTextColumn { Header = "稼动率", Binding = new Binding("UtilizationRate"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) }
-        };
-
-        [ObservableProperty]
-        private ObservableCollection<ProductionEfficiencyTable> _productEfficiencyData = new ObservableCollection<ProductionEfficiencyTable>
-        {
-            new ProductionEfficiencyTable { DeviceName = "上料机1", ScanNG = 0, SystemNG = 0, FailureCount = 0, FailureTime = 0, IdleTime = 0, MountRate = "100.00%", UtilizationRate = "0.00%" },
-            new ProductionEfficiencyTable { DeviceName = "上料机2", ScanNG = 0, SystemNG = 0, FailureCount = 0, FailureTime = 0, IdleTime = 0, MountRate = "100.00%", UtilizationRate = "0.00%" },
-            new ProductionEfficiencyTable { DeviceName = "上挂翻转台", ScanNG = 0, SystemNG = 34, FailureCount = 0, FailureTime = 38, IdleTime = 7, MountRate = "100.00%", UtilizationRate = "98.91%" },
-            new ProductionEfficiencyTable { DeviceName = "下挂翻转台", ScanNG = 0, SystemNG = 20, FailureCount = 28, FailureTime = 19, IdleTime = 0, MountRate = "100.00%", UtilizationRate = "99.54%" },
-            new ProductionEfficiencyTable { DeviceName = "下料机1", ScanNG = 0, SystemNG = 82, FailureCount = 0, FailureTime = 0, IdleTime = 0, MountRate = "100.00%", UtilizationRate = "100.00%" },
-            new ProductionEfficiencyTable { DeviceName = "下料机2", ScanNG = 0, SystemNG = 0, FailureCount = 0, FailureTime = 0, IdleTime = 0, MountRate = "100.00%", UtilizationRate = "100.00%" },
-        };
-
-        #endregion
-
         // -----------------------------------------------------------------------
         // 构造函数
         // -----------------------------------------------------------------------
-        public ViewBViewModel(IConfigService configService)
-        {
-            _configService = configService;
-            InitPieData();
-            // 启动后台任务监控全局 Modules 数量
-            Task.Run(async () =>
-            {
-                while (true)
-                {
-                    await Task.Delay(1000);
-                    if (Global.Modules != Modules)
-                    {
-                        // 触发 OnModulesChanged
-                        Modules = Global.Modules;
-                    }
-                }
-            });
-        }
 
         // -----------------------------------------------------------------------
         // 导航 (Navigation)
@@ -235,7 +148,7 @@ namespace BasicRegionNavigation.ViewModels
             try
             {
                 Global.LoadingManager.StartLoading();
-                ExportToExcelWithDialog(ProductInfoData, ProductInfoData_Down, ProductEfficiencyData);
+                //ExportToExcelWithDialog(ProductInfoData, ProductInfoData_Down, ProductEfficiencyData);
             }
             finally
             {
@@ -249,66 +162,224 @@ namespace BasicRegionNavigation.ViewModels
         {
         }
 
+
+
+        [ObservableProperty]
+        private string _twoDataTableWithHeaderTitle = "产品生产信息表";
+
+        // 产品生产信息表 (Columns 这种通常只读，也可以不做 ObservableProperty，保留原样即可)
+        public ObservableCollection<DataGridColumn> ProductInfoColumns { get; } = new ObservableCollection<DataGridColumn>
+        {
+            new DataGridTextColumn { Header = "项目号", Binding = new Binding("ProjectId"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "原料类别", Binding = new Binding("MaterialType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "产品类别", Binding = new Binding("AnodeType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "上料机A", Binding = new Binding("UpFeeder1"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "上料机B", Binding = new Binding("UpFeeder2"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "上料合计", Binding = new Binding("UpTotalFeederOutput"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "上翻转台", Binding = new Binding("UpTurnTable"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+        };
+
+        // 设备效能表
+        public ObservableCollection<DataGridColumn> ProductEfficiencyColumns { get; } = new ObservableCollection<DataGridColumn>
+        {
+            new DataGridTextColumn { Header = "设备名称", Binding = new Binding("DeviceName"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "扫码NG", Binding = new Binding("ScanNG"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "系统反馈NG", Binding = new Binding("SystemNG"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "故障次数", Binding = new Binding("FailureCount"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "故障时间(min)", Binding = new Binding("FailureTime"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "待机时间(min)", Binding = new Binding("IdleTime"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "上挂率", Binding = new Binding("MountRate"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "稼动率", Binding = new Binding("UtilizationRate"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) }
+        };
+        public ObservableCollection<DataGridColumn> ProductInfoColumns_Down { get; } = new ObservableCollection<DataGridColumn>
+        {
+            new DataGridTextColumn { Header = "项目号", Binding = new Binding("ProjectId"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "原料类别", Binding = new Binding("MaterialType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "阳极类型", Binding = new Binding("AnodeType"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "下料机A", Binding = new Binding("DnFeeder1"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "下料机B", Binding = new Binding("DnFeeder2"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "下料合计", Binding = new Binding("DnTotalFeederOutput"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+            new DataGridTextColumn { Header = "下翻转台", Binding = new Binding("DnTurnTable"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) },
+        };
+        #region 测试数据
+
+        private void StartPieInfoSimulation()
+        {
+            // 开启后台任务：模拟饼图数据 (PieInfo)
+            Task.Run(async () =>
+            {
+                var random = new Random();
+
+                while (true)
+                {
+                    await Task.Delay(2500); // 2.5秒刷新一次，避免闪烁过快
+
+                    // --- 1. 构造上挂饼图数据 ---
+                    // Key = 扇区名称, Value = 数值
+                    var upPieData = new Dictionary<string, int>
+            {
+                { "正常运行", random.Next(60, 100) },
+                { "设备待机", random.Next(10, 30) },
+                { "故障停机", random.Next(0, 15) },
+                { "换料暂停", random.Next(5, 20) }
+            };
+
+                    // --- 2. 构造下挂饼图数据 ---
+                    // 演示使用不同的分类名称
+                    var dnPieData = new Dictionary<string, int>
+            {
+                { "型号A", random.Next(100, 200) },
+                { "型号B", random.Next(50, 150) },
+                { "型号C", random.Next(20, 80) },
+                { "返工",   random.Next(0, 10) }
+            };
+
+                    // --- 3. 推送数据 ---
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // 推送给上挂饼图 (对应 UpMyPieSeries)
+                        HandleDataChanged("1", ModuleDataCategory.UpPieInfo, upPieData);
+
+                        // 推送给下挂饼图 (对应 DnMyPieSeries)
+                        HandleDataChanged("2", ModuleDataCategory.DnPieInfo, dnPieData);
+                    });
+                }
+            });
+        }
+        private void StartProductInfoBSimulation()
+        {
+            // 开启后台任务：模拟 ViewB 的产品生产信息 (上表 & 下表)
+            Task.Run(async () =>
+            {
+                var random = new Random();
+
+                while (true)
+                {
+                    await Task.Delay(3000); // 每 3 秒刷新一次
+
+                    // --- 1. 构造模拟数据列表 ---
+                    // 每次随机生成 1~5 行数据
+                    var newDataList = new List<ProductInfoTable>();
+                    int rowCount = random.Next(1, 6);
+
+                    for (int i = 0; i < rowCount; i++)
+                    {
+                        // 随机生成一行数据（包含上料和下料的所有字段）
+                        var item = new ProductInfoTable
+                        {
+                            // 基础信息
+                            ProjectId = $"PROJ-{random.Next(10000, 99999)}",
+                            MaterialType = random.Next(0, 2) == 0 ? "铝合金" : "不锈钢",
+                            AnodeType = random.Next(0, 2) == 0 ? "一阳" : "二阳",
+
+                            // 上料数据 (Up) -> 对应上表
+                            UpFeeder1 = random.Next(100, 200),
+                            UpFeeder2 = random.Next(100, 200),
+                            UpTotalFeederOutput = random.Next(200, 400), // 简单求和模拟
+                            UpTurnTable = random.Next(0, 50),
+
+                            // 下料数据 (Dn) -> 对应下表
+                            DnFeeder1 = random.Next(100, 200),
+                            DnFeeder2 = random.Next(100, 200),
+                            DnTotalFeederOutput = random.Next(200, 400),
+                            DnTurnTable = random.Next(0, 50)
+                        };
+                        newDataList.Add(item);
+                    }
+
+                    // --- 2. 推送数据到 UI ---
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // 确保 CurrentModule 不为空
+                        if (CurrentModule != null)
+                        {
+                            // 更新上表 (ProductInfoTop)
+                            // 注意：这里使用的是 ModuleDataCategory 枚举
+                            //CurrentModule.DispatchData(ModuleDataCategory.ProductInfoTop, newDataList);
+                            HandleDataChanged("1", ModuleDataCategory.ProductInfoTop, newDataList);
+
+                            // 更新下表 (ProductInfoBottom)
+                            // 这里为了演示，传了相同的数据源，实际业务中可以是不同的 List
+                            //CurrentModule.DispatchData(ModuleDataCategory.ProductInfoBottom, newDataList);
+                            HandleDataChanged("2", ModuleDataCategory.ProductInfoBottom, newDataList);
+
+                        }
+                    });
+                }
+            });
+        }
+
+        private void StartEfficiencyAndFaultSimulation()
+        {
+            // 开启后台任务：模拟 效能表格 (Efficiency) 和 故障统计图表 (FaultStats)
+            Task.Run(async () =>
+            {
+                var random = new Random();
+                // 定义设备名称列表 (与 X 轴标签一致)
+                var deviceNames = new[] { "上料机1", "上料机2", "上翻转台", "下料机1", "下料机2", "下翻转台" };
+
+                while (true)
+                {
+                    await Task.Delay(4000); // 每 4 秒刷新一次
+
+                    // --- 1. 构造效能表格数据 (Efficiency Table) ---
+                    var efficiencyList = new List<ProductionEfficiencyTable>();
+
+                    // 用于收集图表数据
+                    var failureTimes = new double[deviceNames.Length];
+                    var failureCounts = new double[deviceNames.Length];
+
+                    for (int i = 0; i < deviceNames.Length; i++)
+                    {
+                        // 随机生成各项指标
+                        int failTime = random.Next(0, 60);  // 故障时间 0-60分钟
+                        int failCount = random.Next(0, 10); // 故障次数 0-10次
+
+                        var item = new ProductionEfficiencyTable
+                        {
+                            DeviceName = deviceNames[i],
+                            ScanNG = random.Next(0, 5),
+                            SystemNG = random.Next(0, 5),
+                            FailureCount = failCount,
+                            FailureTime = failTime,
+                            IdleTime = random.Next(0, 30),
+                            MountRate = $"{random.Next(95, 100)}.{random.Next(0, 99)}%", // 模拟 95.00% - 99.99%
+                            UtilizationRate = $"{random.Next(80, 100)}.{random.Next(0, 99)}%"
+                        };
+                        efficiencyList.Add(item);
+
+                        // 同步填充图表数据
+                        failureTimes[i] = failTime;
+                        failureCounts[i] = failCount;
+                    }
+
+                    // --- 2. 推送数据到 UI ---
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (CurrentModule != null)
+                        {
+                            // A. 更新效能表格
+                            HandleDataChanged("1", ModuleDataCategory.EfficiencyData, efficiencyList);
+
+                            // B. 更新故障统计图表
+                            // 构造 Tuple<double[], double[]> 传递给 ModuleModelB
+                            var chartData = new Tuple<double[], double[]>(failureTimes, failureCounts);
+                            HandleDataChanged("2", ModuleDataCategory.FaultStatsSeries, chartData);
+
+                        }
+                    });
+                }
+            });
+        }
+
+
+
+        #endregion
+
+
         // -----------------------------------------------------------------------
         // 业务逻辑与辅助方法 (Logic & Helpers)
         // -----------------------------------------------------------------------
-
-        public void InitPieData()
-        {
-            Update.UpdatePieData(UpMyPieSeries, new[] { 1, 1, 1, 1, 1 }, new[] { "Maria", "Susan", "Charles", "Fiona", "George" });
-            Update.UpdatePieData(DnMyPieSeries, new[] { 1, 1, 1, 1, 2 }, new[] { "Maria", "Susan", "Charles", "Fiona", "George" });
-        }
-
-        public void GetNewColumTableData(ObservableCollection<ProductionEfficiencyTable> newEfficiencyData, out ColumnSeries<double> columnSeries1, out ColumnSeries<double> columnSeries2)
-        {
-            var deviceOrder = new[] { "上料机1", "上料机2", "上翻转台", "下料机1", "下料机2", "下翻转台" };
-            var list = newEfficiencyData.OrderBy(e => Array.IndexOf(deviceOrder, e.DeviceName)).Take(6).ToList();
-
-            var values1 = list.Select(e => (double)e.FailureTime).ToArray();
-            columnSeries1 = new ColumnSeries<double>
-            {
-                Fill = new SolidColorPaint(SKColors.Red),
-                Name = "故障时间 (分钟)",
-                ScalesYAt = 0,
-                Values = values1,
-                DataLabelsPaint = new SolidColorPaint(SKColors.Red),
-            };
-
-            var values2 = list.Select(e => (double)e.FailureCount).ToArray();
-            columnSeries2 = new ColumnSeries<double>
-            {
-                Fill = new SolidColorPaint(SKColors.Aqua),
-                Name = "故障次数",
-                ScalesYAt = 1,
-                Values = values2,
-                DataLabelsPaint = new SolidColorPaint(SKColors.Aqua),
-            };
-        }
-
-            public void UpdateSeries(ColumnSeries<double> seriesLeft, ColumnSeries<double> seriesRight)
-        {
-            if (seriesLeft == null || seriesRight == null)
-                throw new ArgumentNullException("seriesLeft / seriesRight 不能为 null");
-            Series = new ISeries[] { seriesLeft, seriesRight };
-        }
-
-        public void UpdateXLabels(DateTime start, DateTime end)
-        {
-            if (XAxes == null || XAxes.Length == 0) return;
-
-            int startHour = start.Hour;
-            int endHour = end.Hour;
-            if (end < start) endHour += 24;
-
-            var labels = new List<string>();
-            for (int hour = startHour; hour <= endHour; hour++)
-            {
-                int normalizedHour = hour % 24;
-                labels.Add(normalizedHour.ToString());
-            }
-
-            XAxes[0].Labels = labels.ToArray();
-        }
 
         [RequireRole(Role.Admin)]
         public static void ExportToExcelWithDialog(

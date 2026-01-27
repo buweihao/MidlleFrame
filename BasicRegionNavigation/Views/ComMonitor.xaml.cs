@@ -29,7 +29,6 @@ namespace BasicRegionNavigation.Views
         public ComMonitor()
         {
             InitializeComponent();
-            ApplyModelVisibility(int.Parse(Global.GetValue("Modules")));
 
             Task.Run(async () =>
             {
