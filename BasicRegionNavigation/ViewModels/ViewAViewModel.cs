@@ -380,6 +380,7 @@ namespace BasicRegionNavigation.ViewModels
                 }
             });
         }
+
         [RelayCommand]
         private async Task NavigateModule(string index)
         {

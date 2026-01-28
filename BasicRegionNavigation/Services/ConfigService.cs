@@ -15,10 +15,9 @@ namespace BasicRegionNavigation.Services
 
     public class ConfigService : IConfigService
     {
-        public ConfigService(string configPath)
+        public ConfigService(params string[] configPaths)
         {
-            // 拿到路径后，传给初始化方法
-            MyConfigInit(configPath);
+            MyConfigInit(configPaths);
         }
 
         public string GetConfigValue(string? key)
@@ -28,8 +27,7 @@ namespace BasicRegionNavigation.Services
             return MyConfigContext.Service.GetValue(key);
         }
 
-
-        private void MyConfigInit(string path)
+        private void MyConfigInit(string[] path)
         {
             // 使用传入的 path，而不是写死
             MyConfigContext.Initialize(path);
@@ -39,18 +37,18 @@ namespace BasicRegionNavigation.Services
 
             Console.WriteLine(MyConfigContext.Service.GetValue("Modules"));
 
-            // 1. 获取管理器实例
-            var manager = MyConfigContext.DefaultManager;
-            // 注册分类 1：加载 My 开头的所有项
-            manager.RegisterCategory("系统参数", key => key.StartsWith("1_") || key.StartsWith("_1"));
+            //// 1. 获取管理器实例
+            //var manager = MyConfigContext.DefaultManager;
+            //// 注册分类 1：加载 My 开头的所有项
+            //manager.RegisterCategory("系统参数", key => key.StartsWith("1_") || key.StartsWith("_1"));
 
-            // 注册分类 2：加载 Database 开头 或者 Connection 结尾的项 (复杂的业务逻辑)
-            manager.RegisterCategory("数据库配置", key =>
-                key.StartsWith("Database") || key.EndsWith("Connection"));
+            //// 注册分类 2：加载 Database 开头 或者 Connection 结尾的项 (复杂的业务逻辑)
+            //manager.RegisterCategory("数据库配置", key =>
+            //    key.StartsWith("Database") || key.EndsWith("Connection"));
 
-            // 注册分类 3：只精确加载某几个特定的键
-            manager.RegisterCategory("关键开关", key =>
-                key == "EnableLog" || key == "IsDebugMode");
+            //// 注册分类 3：只精确加载某几个特定的键
+            //manager.RegisterCategory("关键开关", key =>
+            //    key == "EnableLog" || key == "IsDebugMode");
         }
 
     }

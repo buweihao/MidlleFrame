@@ -181,9 +181,16 @@
 
 
         </Border>
+        <con:AlarmListControl 
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Grid.Row="3"
+            Width="1400" 
+            Height="300" 
+            Margin="10"
+            AlarmItemsSource="{Binding CurrentModule.CurrentWarningInfo.AlarmList}" />
 
-
-        <Border Grid.Column="0"
+        <!--<Border Grid.Column="0"
                 Grid.ColumnSpan="2"
                 Grid.Row="3"
                 Background="#1E2A36"
@@ -226,7 +233,7 @@
                                     Value="14" />
                             <Setter Property="HorizontalContentAlignment"
                                     Value="Left" />
-                            <!-- ✅ 保留这个 -->
+                            --><!-- ✅ 保留这个 --><!--
                             <Setter Property="Background"
                                     Value="#1e242a" />
                             <Setter Property="BorderBrush"
@@ -234,15 +241,15 @@
                         </Style>
                     </DataGrid.ColumnHeaderStyle>
 
-                    <!-- ✅ 单元格样式 -->
+                    --><!-- ✅ 单元格样式 --><!--
                     <DataGrid.CellStyle>
                         <Style TargetType="DataGridCell">
                             <Setter Property="HorizontalContentAlignment"
                                     Value="Left" />
-                            <!-- 水平左对齐 -->
+                            --><!-- 水平左对齐 --><!--
                             <Setter Property="VerticalContentAlignment"
                                     Value="Center" />
-                            <!-- ✅ 垂直居中 -->
+                            --><!-- ✅ 垂直居中 --><!--
                             <Setter Property="Foreground"
                                     Value="Red" />
                             <Setter Property="Background"
@@ -302,6 +309,6 @@
 
                 </DataGrid>
             </Grid>
-        </Border>
+        </Border>-->
     </Grid>
 </UserControl>

@@ -1,10 +1,12 @@
-﻿using ClosedXML.Excel;
+﻿using BasicRegionNavigation;
+using BasicRegionNavigation.Models;
+using BasicRegionNavigation.Services;
+using ClosedXML.Excel;
 using CommunityToolkit.Mvvm.ComponentModel; // 核心引用
 using CommunityToolkit.Mvvm.Input;          // 命令引用
 using Core;
 using HandyControl.Controls;
 using Microsoft.Win32;
-using BasicRegionNavigation;
 using Prism.Events;
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using static BasicRegionNavigation.Models.CurrentStatus;
 
 namespace BasicRegionNavigation.ViewModels
 {
@@ -19,6 +22,47 @@ namespace BasicRegionNavigation.ViewModels
     // 2. 必须继承 ObservableObject
     internal partial class AlarmMonitorViewModel : ObservableObject, INavigationAware
     {
+        [ObservableProperty]
+        private CurrentWarningInfo _currentWarningInfo = new CurrentWarningInfo();
+
+        private void StartWarningSimulation()
+        {
+            Task.Run(async () =>
+            {
+                var random = new Random();
+                while (true)
+                {
+                    await Task.Delay(1000); // 3秒刷新一次
+
+                    // 构造匿名对象，属性名必须与 _alarmConfig 的 Key 一致
+                    var warningData = new
+                    {
+                        // 随机触发一些报警 (10% 概率)
+                        FeederASensorFault = random.Next(0, 10) == 0,
+                        FeederATraceCommFault = random.Next(0, 10) == 0,
+
+                        FeederBSensorFault = random.Next(0, 10) == 0,
+                        FeederBMasterCommFault = random.Next(0, 10) == 0,
+
+                        FlipperDoorTriggered = random.Next(0, 10) == 0,
+                        FlipperEmergencyStop = random.Next(0, 20) == 0, // 5% 概率急停
+                        FlipperScannerCommFault = random.Next(0, 10) == 0
+                    };
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        // 推送报警数据
+                        _currentWarningInfo.UpdateValue(ModuleDataCategory.WarningInfo, warningData);
+
+                    });
+                }
+            });
+        }
+
+
+
+
+
         // -----------------------------------------------------------------------
         // 属性定义 (Property Definitions)
         // -----------------------------------------------------------------------
@@ -76,6 +120,7 @@ namespace BasicRegionNavigation.ViewModels
         public AlarmMonitorViewModel(IEventAggregator ea)
         {
             ea.GetEvent<MyDataUpdatedEvent>().Subscribe(OnMyDataUpdated, ThreadOption.UIThread);
+            StartWarningSimulation();
         }
 
         private void OnMyDataUpdated(IEnumerable<AlarmInfo> value)

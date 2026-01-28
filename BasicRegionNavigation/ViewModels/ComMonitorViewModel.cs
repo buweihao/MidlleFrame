@@ -1,4 +1,5 @@
-﻿using BasicRegionNavigation.Services;
+﻿using BasicRegionNavigation.Helper;
+using BasicRegionNavigation.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core;
@@ -18,8 +19,8 @@ namespace BasicRegionNavigation.ViewModels
         private readonly DispatcherTimer _monitorTimer;
 
         // 定义颜色常量，方便统一修改
-        private static readonly Brush ColorConnected = Brushes.LimeGreen; // 或 Brushes.Green
-        private static readonly Brush ColorDisconnected = Brushes.Gray;   // 或 Brushes.Red
+        private static readonly Brush ColorConnected = Brushes.Green; // 或 Brushes.Green
+        private static readonly Brush ColorDisconnected = Brushes.Red;   // 或 Brushes.Red
 
         public ComMonitorViewModel(IConfigService configService, DataCollectionEngine engine)
         {
@@ -54,10 +55,10 @@ namespace BasicRegionNavigation.ViewModels
         {
             UpdateModel1Status();
             UpdateModel2Status();
-            UpdateModel3Status();
-            UpdateModel4Status();
-            UpdateModel5Status();
-            UpdateModel6Status();
+            //UpdateModel3Status();
+            //UpdateModel4Status();
+            //UpdateModel5Status();
+            //UpdateModel6Status();
         }
 
         // =======================================================================
@@ -78,25 +79,20 @@ namespace BasicRegionNavigation.ViewModels
             // 你需要根据实际的业务逻辑，将 UI 的线条对应到具体的 PLC DeviceID
 
             // 示例：假设上料1对应 PLC_Feeder_A
-            Model1LineColorUpLoad1 = GetStatusBrush("PLC_Feeder_A");
+            Model1LineColorUpLoad1 = GetStatusBrush(MachineNames.GetUpLoadModuleAId(1));
+            Model1LineColorUpLoad2 = GetStatusBrush(MachineNames.GetUpLoadModuleBId(1));
 
-            // 示例：假设翻转台对应 PLC_Flipper
-            Model1LineColorAround = GetStatusBrush("PLC_Flipper");
-
-            // 如果某些线条没有对应的独立PLC，而是共享同一个PLC的状态：
-            Model1LineColorUpLoad2 = Model1LineColorUpLoad1;
-
-            // ...以此类推，根据实际 mapping 填写
-            Model1LineColorDnLoad1 = GetStatusBrush("PLC_Feeder_B");
-            Model1LineColorDnLoad2 = Model1LineColorDnLoad1;
-            Model1LineColorBatch = Model1LineColorDnLoad1;
+            Model1LineColorAround = GetStatusBrush(MachineNames.GetLowerFlipperId(1));
+            Model1LineColorBatch = Model1LineColorAround;
         }
 
         private void UpdateModel2Status()
         {
-            // 这里填写模组2对应的设备ID
-            // Model2LineColorUpLoad1 = GetStatusBrush("Device_ID_For_Model2_Up");
-            // ...
+            Model2LineColorUpLoad1 = GetStatusBrush(MachineNames.GetUpLoadModuleAId(2));
+            Model2LineColorUpLoad2 = GetStatusBrush(MachineNames.GetUpLoadModuleBId(2));
+
+            Model2LineColorAround = GetStatusBrush(MachineNames.GetLowerFlipperId(2));
+            Model2LineColorBatch = Model2LineColorAround;
         }
 
         private void UpdateModel3Status() { /* ... */ }

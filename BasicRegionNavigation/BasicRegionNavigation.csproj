@@ -131,7 +131,7 @@
 		<None Update="Configs\config.csv">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="Configs\custom_config.json">
+		<None Update="Configs\product_setting.json">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="Configs\config.json">

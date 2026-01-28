@@ -39,7 +39,7 @@
                              Model1LineColorBatch="{Binding Model2LineColorBatch}"
                              Model1LineColorAround="{Binding Model2LineColorAround}"></con:ConnectUnit>
 
-            <con:ConnectUnit x:Name="Model3"  ModuleTitle="{Binding Model3RawType}" 
+            <!--<con:ConnectUnit x:Name="Model3"  ModuleTitle="{Binding Model3RawType}" 
                              Model1LineColorUpLoad1="{Binding Model3LineColorUpLoad1}"
                              Model1LineColorUpLoad2="{Binding Model3LineColorUpLoad2}"
                              Model1LineColorDnLoad1="{Binding Model3LineColorDnLoad1}"
@@ -66,7 +66,7 @@
                               Model1LineColorDnLoad1="{Binding Model6LineColorDnLoad1}"
                               Model1LineColorDnLoad2="{Binding Model6LineColorDnLoad2}"
                               Model1LineColorBatch="{Binding   Model6LineColorBatch}"
-                              Model1LineColorAround="{Binding  Model6LineColorAround}" ></con:ConnectUnit>
+                              Model1LineColorAround="{Binding  Model6LineColorAround}" ></con:ConnectUnit>-->
         </StackPanel>
         <Canvas Grid.Row="1"
                 Grid.Column="0"

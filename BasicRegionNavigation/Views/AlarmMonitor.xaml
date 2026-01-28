@@ -5,6 +5,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:BasicRegionNavigation.Views"
+             xmlns:con="clr-namespace:BasicRegionNavigation.Controls"
              xmlns:prism="http://prismlibrary.com/" 
              prism:ViewModelLocator.AutoWireViewModel="True"
              mc:Ignorable="d" 
@@ -22,68 +23,12 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-            <Border  Margin="10" Background="#1E2A38" CornerRadius="6" Grid.Row="0">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="1*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="8*"/>
-                    </Grid.RowDefinitions>
-                    <ContentControl Content="实时报警" Style="{StaticResource SectionHeaderStyle}" />
-                    <!-- 表头 -->
-
-                    <Grid Grid.Row="1" Background="#182128">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1*" />
-                            <ColumnDefinition Width="1.5*" />
-                            <ColumnDefinition Width="1.5*" />
-                            <ColumnDefinition Width="1.5*" />
-                            <ColumnDefinition Width="2.5*" />
-                            <ColumnDefinition Width="1*" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Text="序号" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="15"/>
-                        <TextBlock Grid.Column="1" Text="时间" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="5"/>
-                        <TextBlock Grid.Column="2" Text="设备" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="5"/>
-                        <TextBlock Grid.Column="3" Text="报警类别" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="5"/>
-                        <TextBlock Grid.Column="4" Text="报警描述" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="5"/>
-                        <TextBlock Grid.Column="5" Text="状态" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="5"/>
-                    </Grid>
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" Grid.Row="2">
-                    <!-- 数据行 -->
-                    <ItemsControl  Foreground="White" ItemsSource="{Binding RealTimeAlarmRowItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="2,5,2,5">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="1*" />
-                                        <ColumnDefinition Width="1.5*" />
-                                        <ColumnDefinition Width="1.5*" />
-                                        <ColumnDefinition Width="1.5*" />
-                                        <ColumnDefinition Width="2.5*" />
-                                        <ColumnDefinition Width="1*" />
-                                    </Grid.ColumnDefinitions>
-
-
-                                    <TextBlock Text="{Binding ID}"  Foreground="White" VerticalAlignment="Center" Margin="5"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding AlarmTime}"  Margin="5,5,60,5"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding DeviceName}"  Margin="5,5,20,5"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding AlarmType}"  Margin="5,5,20,5"/>
-                                    <TextBlock Grid.Column="4" Text="{Binding AlarmDescription}"  Margin="5,5,20,5"/>
-                                    <TextBlock Grid.Column="5" Text="{Binding Status}"  Margin="5,5,20,5"/>
-
-                                   
-
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-
-            </Grid>
-            </Border>
-
-
+        <con:AlarmListControl 
+            Grid.Row="0"
+            Width="1900" 
+            Height="600" 
+            Margin="10"
+            AlarmItemsSource="{Binding CurrentWarningInfo.AlarmList}" />
 
             <Border  Margin="10" Background="#1E2A38" CornerRadius="6" Grid.Row="1">
                 <Grid>

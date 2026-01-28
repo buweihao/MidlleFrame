@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace BasicRegionNavigation.Services
 {
+    /// <summary>
+    /// 上下料机小时需要存储时，使用这个服务来插入数据
+    /// </summary>
     internal interface IUpDropHourlyCapacityService
     {
         /// <summary>

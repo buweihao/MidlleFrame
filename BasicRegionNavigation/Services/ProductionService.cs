@@ -79,40 +79,40 @@ namespace BasicRegionNavigation.Services
             // === 场景 C：特殊工序（下翻转台 - 你的痛点） ===
             // 特点：PLC 只知道挂具号，不知道 SN。需要先反查，再更新。
             // 标识：identityKey 是 FixtureCode
-            else if (plcName.ToString().Contains("LowerHangFlip"))
-            {
-                // 1. [关键步骤] 反查 SN
-                // 查找条件：FixtureCode 匹配 且 流程未结束 (IsCompleted == false)
-                // 排序：按时间倒序，防止极低概率的历史重复数据干扰
-                var record = await db.Queryable<ProductionRecord>()
-                    .OrderByDescending(it => it.CreateTime)
-                    .FirstAsync(it => it.FixtureCode == identityKey && !it.IsCompleted);
+            //else if (plcName.ToString().Contains("LowerHangFlip"))
+            //{
+            //    // 1. [关键步骤] 反查 SN
+            //    // 查找条件：FixtureCode 匹配 且 流程未结束 (IsCompleted == false)
+            //    // 排序：按时间倒序，防止极低概率的历史重复数据干扰
+            //    var record = await db.Queryable<ProductionRecord>()
+            //        .OrderByDescending(it => it.CreateTime)
+            //        .FirstAsync(it => it.FixtureCode == identityKey && !it.IsCompleted);
 
-                if (record == null)
-                {
-                    // 严重警告：找不到对应的在线产品（可能是挂具号读错，或者步骤2没写入）
-                    Console.WriteLine($"[Error] 挂具 {identityKey} 上未找到未完成的产品记录！");
-                    return;
-                }
+            //    if (record == null)
+            //    {
+            //        // 严重警告：找不到对应的在线产品（可能是挂具号读错，或者步骤2没写入）
+            //        Console.WriteLine($"[Error] 挂具 {identityKey} 上未找到未完成的产品记录！");
+            //        return;
+            //    }
 
-                // 2. 更新状态
-                // 既然拿到了 record 对象，直接修改它的属性并 Update 即可
-                record.LowerHangFlipDeivceName = plcName.ToString();
-                record.LowerHangFlip_Time = DateTime.Now;
-                record.IsCompleted = true; // 假设这是最后一步
-                record.FinishTime = DateTime.Now;
+            //    // 2. 更新状态
+            //    // 既然拿到了 record 对象，直接修改它的属性并 Update 即可
+            //    record.LowerHangFlipDeivceName = plcName.ToString();
+            //    record.LowerHangFlip_Time = DateTime.Now;
+            //    record.IsCompleted = true; // 假设这是最后一步
+            //    record.FinishTime = DateTime.Now;
 
-                // 3. 执行更新 (SqlSugar 会自动根据 record.Id 主键去更新)
-                await db.Updateable(record)
-                    .UpdateColumns(it => new
-                    {
-                        it.LowerHangFlipDeivceName,
-                        it.LowerHangFlip_Time,
-                        it.IsCompleted,
-                        it.FinishTime
-                    })
-                    .ExecuteCommandAsync();
-            }
+            //    // 3. 执行更新 (SqlSugar 会自动根据 record.Id 主键去更新)
+            //    await db.Updateable(record)
+            //        .UpdateColumns(it => new
+            //        {
+            //            it.LowerHangFlipDeivceName,
+            //            it.LowerHangFlip_Time,
+            //            it.IsCompleted,
+            //            it.FinishTime
+            //        })
+            //        .ExecuteCommandAsync();
+            //}
         }
 
 

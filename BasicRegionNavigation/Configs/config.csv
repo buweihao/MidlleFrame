@@ -91,36 +91,37 @@ PLC_Flipper,10.120.93.89,502, FlipperScannerCommFault,1508, Bool,1000, Coils, Fa
 ,,,,,,,,,
 // --- 供料机A与B产品码读取 ---,,,,,,,,,
 // 供料机A,,,,,,,,,
-PLC_Feeder_A,10.120.93.87,502, A_产品码(104Byte),1100, String,100, Registers, False,8
-PLC_Feeder_A,10.120.93.87,502, A_触发,7010, Int16,100, Registers, True,
-PLC_Feeder_A,10.120.93.87,502, A_返回结果,7011, Int16,100, Registers, True,
-PLC_Feeder_A,10.120.93.87,502, A_清零,7012, Int16,100, Registers, True,
+PLC_Feeder_A,10.120.93.87,502,A_ProductCode,1100,String,100,Registers,False,8
+PLC_Feeder_A,10.120.93.87,502,A_Trigger,7010,Int16,100,Registers,True,
+PLC_Feeder_A,10.120.93.87,502,A_Result,7011,Int16,100,Registers,True,
+PLC_Feeder_A,10.120.93.87,502,A_Clear,7012,Int16,100,Registers,True,
 // 供料机B,,,,,,,,,
-PLC_Feeder_B,10.120.93.88,502, B_产品码(104Byte),1100, String,100, Registers, False,8
-PLC_Feeder_B,10.120.93.88,502, B_触发,7010, Int16,100, Registers, True,
-PLC_Feeder_B,10.120.93.88,502, B_返回结果,7011, Int16,100, Registers, True,
-PLC_Feeder_B,10.120.93.88,502, B_清零,7012, Int16,100, Registers, True,
+PLC_Feeder_B,10.120.93.88,502,B_ProductCode,1100,String,100,Registers,False,8
+PLC_Feeder_B,10.120.93.88,502,B_Trigger,7010,Int16,100,Registers,True,
+PLC_Feeder_B,10.120.93.88,502,B_Result,7011,Int16,100,Registers,True,
+PLC_Feeder_B,10.120.93.88,502,B_Clear,7012,Int16,100,Registers,True,
 ,,,,,,,,,
 // --- 上挂翻转台产品码和挂具码读取 ---,,,,,,,,,
 // 第一组A面,,,,,,,,,
-PLC_Flipper,10.120.93.89,502, Flip_A_产品码(168Int),2020, String,500, Registers, False,168
-PLC_Flipper,10.120.93.89,502, Flip_A_挂具码(7Int),2000, String,500, Registers, False,7
-PLC_Flipper,10.120.93.89,502, Flip_A_产品位置,1340, String,500, Registers, False,1
-PLC_Flipper,10.120.93.89,502, Flip_A_产品项目号,1300, String,500, Registers, False,6
-PLC_Flipper,10.120.93.89,502, Flip_A_原料类别,1310, String,500, Registers, False,6
-PLC_Flipper,10.120.93.89,502, Flip_A_阳极类型,1320, String,500, Registers, False,6
-PLC_Flipper,10.120.93.89,502, Flip_A_颜色,1330, String,500, Registers, False,6
-PLC_Flipper,10.120.93.89,502, Flip_触发,720, Int16,200, Registers, True,
-PLC_Flipper,10.120.93.89,502, Flip_返回结果,721, Int16,200, Registers, True,
-PLC_Flipper,10.120.93.89,502, Flip_清零,722, Int16,200, Registers, True,
+PLC_Name,IP_Address,Port,Tag_Name,Address,Data_Type,Interval,Register_Type,Is_Trigger,Length
+PLC_Flipper,10.120.93.89,502,Flip_A_ProductCode,2020,String,500,Registers,False,168
+PLC_Flipper,10.120.93.89,502,Flip_A_CarrierCode,2000,String,500,Registers,False,7
+PLC_Flipper,10.120.93.89,502,Flip_A_ProductPosition,1340,String,500,Registers,False,1
+PLC_Flipper,10.120.93.89,502,Flip_A_ProjectNo,1300,String,500,Registers,False,6
+PLC_Flipper,10.120.93.89,502,Flip_A_MaterialCategory,1310,String,500,Registers,False,6
+PLC_Flipper,10.120.93.89,502,Flip_A_AnodeType,1320,String,500,Registers,False,6
+PLC_Flipper,10.120.93.89,502,Flip_A_Color,1330,String,500,Registers,False,6
+PLC_Flipper,10.120.93.89,502,Flip_Trigger,720,Int16,200,Registers,True,
+PLC_Flipper,10.120.93.89,502,Flip_Result,721,Int16,200,Registers,True,
+PLC_Flipper,10.120.93.89,502,Flip_Clear,722,Int16,200,Registers,True,
 // 第一组B面,,,,,,,,,
-PLC_Flipper,10.120.93.89,502, Flip_B_产品码(168Int),2188, String,500, Registers, False,168
-PLC_Flipper,10.120.93.89,502, Flip_B_挂具码(7Int),2000, String,500, Registers, False,7
-PLC_Flipper,10.120.93.89,502, Flip_B_产品位置,1342, String,500, Registers, False,1
-PLC_Flipper,10.120.93.89,502, Flip_B_产品项目号,1300, String,500, Registers, False,6
-PLC_Flipper,10.120.93.89,502, Flip_B_原料类别,1310, String,500, Registers, False,6
-PLC_Flipper,10.120.93.89,502, Flip_B_阳极类型,1320, String,500, Registers, False,6
-PLC_Flipper,10.120.93.89,502, Flip_B_颜色,1330, String,500, Registers, False,6
+PLC_Flipper,10.120.93.89,502,Flip_B_ProductCode,2188,String,500,Registers,False,168
+PLC_Flipper,10.120.93.89,502,Flip_B_CarrierCode,2000,String,500,Registers,False,7
+PLC_Flipper,10.120.93.89,502,Flip_B_ProductPosition,1342,String,500,Registers,False,1
+PLC_Flipper,10.120.93.89,502,Flip_B_ProjectNo,1300,String,500,Registers,False,6
+PLC_Flipper,10.120.93.89,502,Flip_B_MaterialCategory,1310,String,500,Registers,False,6
+PLC_Flipper,10.120.93.89,502,Flip_B_AnodeType,1320,String,500,Registers,False,6
+PLC_Flipper,10.120.93.89,502,Flip_B_Color,1330,String,500,Registers,False,6
 ,,,,,,,,,
 // --- 供料机A与B小时产能触发 ---,,,,,,,,,
 // 供料机A,,,,,,,,,

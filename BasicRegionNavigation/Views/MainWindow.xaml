@@ -6,6 +6,7 @@
         xmlns:Core="clr-namespace:Core"
         xmlns:Console="clr-namespace:MyConsole;assembly=MyConsole"
         prism:ViewModelLocator.AutoWireViewModel="True"
+        xmlns:modbus="clr-namespace:MyModbus;assembly=MyModbus"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         PreviewKeyDown="Window_KeyDown"
         Loaded="Window_Loaded"
@@ -183,7 +184,8 @@
                   GroupName="MainMenu"/>
                 <hc:ClockRadioButton Grid.Column="8" Content="  用户管理  " Style="{StaticResource NavToggleButtonStyle}"   Command="{Binding NavigateCommand}" CommandParameter="UserManage"
                   GroupName="MainMenu"/>
-                <Console:ConsoleButton Grid.Column="9"></Console:ConsoleButton>
+                <modbus:DashboardEntry Grid.Column="9"></modbus:DashboardEntry>
+                <Console:ConsoleButton Grid.Column="9" Visibility="Collapsed"></Console:ConsoleButton>
             </Grid>
 
             <ContentControl Grid.Row="2" prism:RegionManager.RegionName="ContentRegion"  Margin="5" >

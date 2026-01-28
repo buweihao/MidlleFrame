@@ -7,6 +7,7 @@ using DryIoc.Microsoft.DependencyInjection; // 必须！提供 Populate 扩展�
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using My.Services;
 using Prism.DryIoc; // 提供 GetContainer 扩展
 using Prism.Ioc;
@@ -44,7 +45,6 @@ namespace BasicRegionNavigation
 
             // B. 调用你封装好的扩展方法，注册 Modbus、DB、Config 等业务服务
             services.AddBusinessServices();
-
             // C. 获取 DryIoc 的原生容器实例
             // 注意：需要引用 using Prism.DryIoc; 才能使用 .GetContainer()
             // 如果报错，可以使用强转：var container = ((IContainerExtension<IContainer>)containerRegistry).Instance;
@@ -89,6 +89,18 @@ namespace BasicRegionNavigation
         {
             // 必须先调用 base，否则 MainWindow 不会显示
             base.OnInitialized();
+            // 从容器中解析出所有注册的 IHostedService
+            // 这会包含 EngineLifecycleManager, DbInitializationService 等
+            var hostedServices = Container.Resolve<IEnumerable<IHostedService>>();
+
+            if (hostedServices != null)
+            {
+                foreach (var service in hostedServices)
+                {
+                    // 手动触发启动，Modbus 引擎将在这里开始轮询
+                    await service.StartAsync(CancellationToken.None);
+                }
+            }
 
             try
             {
@@ -108,6 +120,22 @@ namespace BasicRegionNavigation
                 // GrowlHelper.Error($"后台服务启动失败: {ex.Message}");
                 MessageBox.Show($"后台服务启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+
+        protected override async void OnExit(ExitEventArgs e)
+        {
+            // 优雅退出：调用 StopAsync 停止引擎，断开连接，保存数据等
+            var hostedServices = Container.Resolve<IEnumerable<IHostedService>>();
+            if (hostedServices != null)
+            {
+                foreach (var service in hostedServices)
+                {
+                    await service.StopAsync(CancellationToken.None);
+                }
+            }
+
+            base.OnExit(e);
         }
     }
 }

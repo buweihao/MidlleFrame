@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace BasicRegionNavigation.Services
 {
+    /// <summary>
+    /// 翻转台小时产能存储的服务
+    /// </summary>
     public interface IFlipperHourlyCapacityService
     {
         /// <summary>
