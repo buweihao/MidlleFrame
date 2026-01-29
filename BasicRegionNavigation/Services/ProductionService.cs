@@ -21,100 +21,106 @@ namespace BasicRegionNavigation.Services
         /// <param name="identityKey">标识Key：工序1/2传SN，工序3传FixtureCode</param>
         /// <param name="data">PLC读取的数据字典</param>
 
-        public async Task ProcessProductDataAsync(string plcName, string identityKey, Dictionary<string, object>? data)
+        /// <summary>
+        /// 处理 PLC 数据（重构版）
+        /// </summary>
+        public async Task ProcessProductDataAsync(StationProcessContext context)
         {
             using var db = _factory.GetClient();
 
-            // ---------------------------------------------------------
-            // 1. 记录原始日志 (Raw Log) - 这一步不变，用于追溯
-            // ---------------------------------------------------------
-            string jsonPayload = System.Text.Json.JsonSerializer.Serialize(data);
+            // 1. 记录原始日志 (Raw Log)
+            string jsonPayload = System.Text.Json.JsonSerializer.Serialize(context.PlcData);
             await db.Insertable(new DeviceLog
             {
-                Module = plcName.ToString(),
-                Message = $"Identity: {identityKey} | Data: {jsonPayload}", // 记录传入的 Key
+                Module = context.DeviceId,
+                // 清晰记录：当前是[什么工序]，标识是[什么]
+                Message = $"[{context.ProcessType}] Key: {context.IdentityValue} | Data: {jsonPayload}",
                 CreateTime = DateTime.Now
             }).ExecuteCommandAsync();
 
-            // ---------------------------------------------------------
-            // 2. 业务逻辑处理 (根据 PLC 不同，采取不同策略)
-            // ---------------------------------------------------------
-
-            // === 场景 A：第一道工序（上料） ===
-            // 特点：系统里可能没数据，需要 Insert；如果有数据则是 Update。
-            // 标识：identityKey 是 ProductCode
-            if (plcName.ToString().Contains("UpLoad"))
+            // 2. 根据枚举分发业务逻辑
+            switch (context.ProcessType)
             {
-                var record = new ProductionRecord
-                {
-                    ProductCode = identityKey, // 这里 Key 就是 SN
-                    UpLoadDeivceName = plcName.ToString(),
-                    UpLoad_Time = DateTime.Now,
-                };
-
-                // 使用 Storageable 实现 "有则更新，无则插入" (Upsert)
-                await db.Storageable(record)
-                    .SplitInsert(it => !it.Any())
-                    .SplitUpdate(it => true)
-                    .ExecuteCommandAsync();
-            }
-
-            // === 场景 B：中间工序（上翻转台） ===
-            // 特点：记录必然存在，只更新字段。
-            // 标识：identityKey 是 ProductCode
-            else if (plcName.ToString().Contains("UpperHangFlip"))
-            {
-                // 直接根据主键 SN 更新特定列
-                await db.Updateable<ProductionRecord>()
-                    .SetColumns(it => new ProductionRecord
+                // === 场景 A：第一道工序（上料） ===
+                case StationProcessType.Entry_Upload:
                     {
-                        UpperHangFlipDeivceName = plcName.ToString(),
-                        UpperHangFlip_Time = DateTime.Now,
-                        FixtureCode = data.ContainsKey("FixtureCode") ? data["FixtureCode"].ToString() : null // 这里可能绑定挂具
-                    })
-                    .Where(it => it.ProductCode == identityKey) // Key 是 SN
-                    .ExecuteCommandAsync();
+                        var record = new ProductionRecord
+                        {
+                            ProductCode = context.IdentityValue, // 这里明确是 SN
+                            UpLoadDeivceName = context.DeviceId,
+                            UpLoad_Time = DateTime.Now,
+                        };
+
+                        await db.Storageable(record)
+                            .SplitInsert(it => !it.Any())
+                            .SplitUpdate(it => true)
+                            .ExecuteCommandAsync();
+                    }
+                    break;
+
+                // === 场景 B：中间工序（上翻转台） ===
+                case StationProcessType.Process_Flip:
+                    {
+                        // 尝试从数据字典里拿挂具号，拿不到就空
+                        string fixtureCode = context.PlcData.ContainsKey("FixtureCode")
+                                             ? context.PlcData["FixtureCode"]?.ToString()
+                                             : null;
+                        string projectNumber = context.PlcData.ContainsKey("ProjectNumber")
+                                             ? context.PlcData["ProjectNumber"]?.ToString()
+                                             : null;
+                        string productCategory = context.PlcData.ContainsKey("ProductCategory")
+                                             ? context.PlcData["ProductCategory"]?.ToString()
+                                             : null;
+                        await db.Updateable<ProductionRecord>()
+                            .SetColumns(it => new ProductionRecord
+                            {
+                                UpperHangFlipDeivceName = context.DeviceId,
+                                UpperHangFlip_Time = DateTime.Now,
+                                FixtureCode = fixtureCode,
+                                ProjectNumber = projectNumber,
+                                ProductCategory = productCategory
+
+    })
+                            .Where(it => it.ProductCode == context.IdentityValue) // Where SN = Key
+                            .ExecuteCommandAsync();
+                    }
+                    break;
+
+                // === 场景 C：特殊工序（下翻转台/解绑） ===
+                case StationProcessType.Exit_Unload:
+                    {
+                        // 1. 反查 SN (Key 是 FixtureCode)
+                        var record = await db.Queryable<ProductionRecord>()
+                            .OrderByDescending(it => it.CreateTime)
+                            .FirstAsync(it => it.FixtureCode == context.IdentityValue && !it.IsCompleted);
+
+                        if (record == null)
+                        {
+                            // 记录错误日志，或者触发报警
+                            Console.WriteLine($"[Error] 挂具 {context.IdentityValue} 未找到对应产品！设备: {context.DeviceId}");
+                            return;
+                        }
+
+                        // 2. 更新状态
+                        record.LowerHangFlipDeivceName = context.DeviceId;
+                        record.LowerHangFlip_Time = DateTime.Now;
+                        record.IsCompleted = true;
+                        record.FinishTime = DateTime.Now;
+
+                        // 3. 执行更新
+                        await db.Updateable(record)
+                            .UpdateColumns(it => new
+                            {
+                                it.LowerHangFlipDeivceName,
+                                it.LowerHangFlip_Time,
+                                it.IsCompleted,
+                                it.FinishTime
+                            })
+                            .ExecuteCommandAsync();
+                    }
+                    break;
             }
-
-            // === 场景 C：特殊工序（下翻转台 - 你的痛点） ===
-            // 特点：PLC 只知道挂具号，不知道 SN。需要先反查，再更新。
-            // 标识：identityKey 是 FixtureCode
-            //else if (plcName.ToString().Contains("LowerHangFlip"))
-            //{
-            //    // 1. [关键步骤] 反查 SN
-            //    // 查找条件：FixtureCode 匹配 且 流程未结束 (IsCompleted == false)
-            //    // 排序：按时间倒序，防止极低概率的历史重复数据干扰
-            //    var record = await db.Queryable<ProductionRecord>()
-            //        .OrderByDescending(it => it.CreateTime)
-            //        .FirstAsync(it => it.FixtureCode == identityKey && !it.IsCompleted);
-
-            //    if (record == null)
-            //    {
-            //        // 严重警告：找不到对应的在线产品（可能是挂具号读错，或者步骤2没写入）
-            //        Console.WriteLine($"[Error] 挂具 {identityKey} 上未找到未完成的产品记录！");
-            //        return;
-            //    }
-
-            //    // 2. 更新状态
-            //    // 既然拿到了 record 对象，直接修改它的属性并 Update 即可
-            //    record.LowerHangFlipDeivceName = plcName.ToString();
-            //    record.LowerHangFlip_Time = DateTime.Now;
-            //    record.IsCompleted = true; // 假设这是最后一步
-            //    record.FinishTime = DateTime.Now;
-
-            //    // 3. 执行更新 (SqlSugar 会自动根据 record.Id 主键去更新)
-            //    await db.Updateable(record)
-            //        .UpdateColumns(it => new
-            //        {
-            //            it.LowerHangFlipDeivceName,
-            //            it.LowerHangFlip_Time,
-            //            it.IsCompleted,
-            //            it.FinishTime
-            //        })
-            //        .ExecuteCommandAsync();
-            //}
         }
-
 
         /// <summary>
         /// 灵活查询生产记录
@@ -201,10 +207,70 @@ namespace BasicRegionNavigation.Services
     }
     public interface IProductionService
     {
-        Task ProcessProductDataAsync(string plcName, string sn, Dictionary<string, object> data);
+        Task ProcessProductDataAsync(StationProcessContext context);
         Task<ObservableCollection<ProductionRecord>> GetProductionRecordsAsync(
         DateTime? startTime = null,
         DateTime? endTime = null,
         Dictionary<string, object>? filters = null);
+    }
+    // 1. 定义工序类型（明确告诉程序当前是哪一步）
+    public enum StationProcessType
+    {
+        /// <summary>
+        /// 进站/上料 (Identity = SN)
+        /// 行为：新建或更新记录
+        /// </summary>
+        Entry_Upload,
+
+        /// <summary>
+        /// 中间工序 (Identity = SN)
+        /// 行为：只更新数据
+        /// </summary>
+        Process_Flip,
+
+        /// <summary>
+        /// 出站/下料 (Identity = FixtureCode)
+        /// 行为：反查挂具 -> 完结记录
+        /// </summary>
+        Exit_Unload
+    }
+
+    // 2. 定义统一的参数对象 (Context)
+    public class StationProcessContext
+    {
+        /// <summary>
+        /// 触发的设备全名 (如 "1_PLC_UpLoad")
+        /// 用于写入数据库的 DeviceName 字段
+        /// </summary>
+        public string DeviceId { get; set; }
+
+        /// <summary>
+        /// 关键标识值 (可能是 SN，也可能是 挂具号)
+        /// </summary>
+        public string IdentityValue { get; set; }
+
+        /// <summary>
+        /// 当前工序类型 (核心逻辑开关)
+        /// </summary>
+        public StationProcessType ProcessType { get; set; }
+
+        /// <summary>
+        /// PLC 原始数据包
+        /// </summary>
+        public Dictionary<string, object> PlcData { get; set; }
+
+        /// <summary>
+        /// 辅助方法：快速创建
+        /// </summary>
+        public static StationProcessContext Create(string deviceId, string identity, StationProcessType type, Dictionary<string, object> data)
+        {
+            return new StationProcessContext
+            {
+                DeviceId = deviceId,
+                IdentityValue = identity,
+                ProcessType = type,
+                PlcData = data
+            };
+        }
     }
 }

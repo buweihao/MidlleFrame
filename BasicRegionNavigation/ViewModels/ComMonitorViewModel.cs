@@ -78,21 +78,22 @@ namespace BasicRegionNavigation.ViewModels
             // 假设：config.csv 中定义的 DeviceID 分别是 "PLC_Feeder_A", "PLC_Feeder_B" 等
             // 你需要根据实际的业务逻辑，将 UI 的线条对应到具体的 PLC DeviceID
 
-            // 示例：假设上料1对应 PLC_Feeder_A
-            Model1LineColorUpLoad1 = GetStatusBrush(MachineNames.GetUpLoadModuleAId(1));
-            Model1LineColorUpLoad2 = GetStatusBrush(MachineNames.GetUpLoadModuleBId(1));
 
-            Model1LineColorAround = GetStatusBrush(MachineNames.GetLowerFlipperId(1));
+
+            Model1LineColorUpLoad1 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("1", "PLC_Feeder_A"));
+            Model1LineColorUpLoad2 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("1", "PLC_Feeder_B"));
+
+            Model1LineColorAround = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("1", "PLC_Flipper"));
             Model1LineColorBatch = Model1LineColorAround;
         }
 
         private void UpdateModel2Status()
         {
-            Model2LineColorUpLoad1 = GetStatusBrush(MachineNames.GetUpLoadModuleAId(2));
-            Model2LineColorUpLoad2 = GetStatusBrush(MachineNames.GetUpLoadModuleBId(2));
+            Model1LineColorUpLoad1 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Feeder_A"));
+            Model1LineColorUpLoad2 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Feeder_B"));
 
-            Model2LineColorAround = GetStatusBrush(MachineNames.GetLowerFlipperId(2));
-            Model2LineColorBatch = Model2LineColorAround;
+            Model1LineColorAround = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Flipper"));
+            Model1LineColorBatch = Model1LineColorAround;
         }
 
         private void UpdateModel3Status() { /* ... */ }

@@ -40,46 +40,57 @@ namespace BasicRegionNavigation.Helper
         private static void RegisterModbus(IServiceCollection services)
         {
             string modbusConfigPath = "Configs/config.csv";
-            services.AddMyModbusCore(modbusConfigPath); // 假设这是你的扩展方法
-            //services.AddMyModbusCore(modbusConfigPath, devices =>
-            //{
-            //    // 定义克隆清单
-            //    var cloneList = new[]
-            //    {
-            //        (Template: "PLC_Peripheral", NewId: MachineNames.GetLowerFlipperId(1), Ip: "127.0.0.1"),
-            //        (Template: "PLC_Robot", NewId: MachineNames.GetLowerFlipperId(1), Ip: "127.0.0.1"),
-            //        (Template: "PLC_Feeder_A",    NewId: MachineNames.GetUpLoadModuleAId(1),    Ip: "127.0.0.2"),
-            //        (Template: "PLC_Feeder_B",  NewId: MachineNames.GetUpLoadModuleBId(1),  Ip: "127.0.0.3"),
-            //        (Template: "PLC_Flipper",  NewId: MachineNames.GetLowerFlipperId(1),  Ip: "127.0.0.1"),
 
-            //        (Template: "PLC_Peripheral", NewId: MachineNames.GetLowerFlipperId(2), Ip: "127.0.0.1"),
-            //        (Template: "PLC_Robot", NewId: MachineNames.GetLowerFlipperId(2), Ip: "127.0.0.1"),
-            //        (Template: "PLC_Feeder_A",    NewId: MachineNames.GetUpLoadModuleAId(2),    Ip: "127.0.0.2"),
-            //        (Template: "PLC_Feeder_B",  NewId: MachineNames.GetUpLoadModuleBId(2),  Ip: "127.0.0.3"),
-            //        (Template: "PLC_Flipper",  NewId: MachineNames.GetLowerFlipperId(2),  Ip: "127.0.0.1"),
-            //        };
+            // 注意：这里只需要调用一次 AddMyModbusCore，不要重复调用
+            services.AddMyModbusCore(modbusConfigPath, devices =>
+            {
+                // 定义克隆清单
+                // Template: 原始设备名 (csv里配的)
+                // ModuleId: 模组编号 (1, 2...)
+                // Ip: 该模组该设备的实际IP
+                var cloneList = new[]
+                {
+            (Template: "PLC_Peripheral", ModuleId: "1", Ip: "127.0.0.1"),
+            (Template: "PLC_Robot",      ModuleId: "1", Ip: "127.0.0.1"),
+            (Template: "PLC_Feeder_A",   ModuleId: "1", Ip: "127.0.0.2"),
+            (Template: "PLC_Feeder_B",   ModuleId: "1", Ip: "127.0.0.3"),
+            (Template: "PLC_Flipper",    ModuleId: "1", Ip: "127.0.0.1"),
 
-            //    var templatesToRemove = new HashSet<Device>();
+            (Template: "PLC_Peripheral", ModuleId: "2", Ip: "127.0.0.1"),
+            (Template: "PLC_Robot",      ModuleId: "2", Ip: "127.0.0.1"),
+            (Template: "PLC_Feeder_A",   ModuleId: "2", Ip: "127.0.0.2"),
+            (Template: "PLC_Feeder_B",   ModuleId: "2", Ip: "127.0.0.3"),
+            (Template: "PLC_Flipper",    ModuleId: "2", Ip: "127.0.0.1"),
+        };
 
-            //    foreach (var item in cloneList)
-            //    {
-            //        var template = devices.FirstOrDefault(d => d.DeviceId == item.Template);
-            //        if (template != null)
-            //        {
-            //            templatesToRemove.Add(template);
-            //            devices.Add(template.CloneAsNew(item.NewId, item.Ip));
-            //        }
-            //        else
-            //        {
-            //            System.Diagnostics.Debug.WriteLine($"警告：找不到模板设备 {item.Template}");
-            //        }
-            //    }
+                var templatesToRemove = new HashSet<Device>();
 
-            //    foreach (var t in templatesToRemove)
-            //    {
-            //        devices.Remove(t);
-            //    }
-            //});
+                foreach (var item in cloneList)
+                {
+                    var template = devices.FirstOrDefault(d => d.DeviceId == item.Template);
+                    if (template != null)
+                    {
+                        templatesToRemove.Add(template);
+
+                        // --- 关键修改 ---
+                        // 使用 CloneToModule，而不是 CloneAsNew
+                        // 这样生成的 DeviceId 将是 "1_PLC_Peripheral" 而不是 "1"
+                        var newDevice = template.CloneToModule(item.ModuleId, item.Ip);
+
+                        devices.Add(newDevice);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"警告：找不到模板设备 {item.Template}");
+                    }
+                }
+
+                // 移除原始模板，防止它占用资源
+                foreach (var t in templatesToRemove)
+                {
+                    devices.Remove(t);
+                }
+            });
         }
 
         private static void RegisterDatabase(IServiceCollection services)

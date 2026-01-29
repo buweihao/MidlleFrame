@@ -10,7 +10,7 @@ namespace BasicRegionNavigation.Services
     /// <summary>
     /// 上下料机小时需要存储时，使用这个服务来插入数据
     /// </summary>
-    internal interface IUpDropHourlyCapacityService
+    public interface IUpDropHourlyCapacityService
     {
         /// <summary>
         /// 处理并存储产能相关数据
@@ -19,7 +19,7 @@ namespace BasicRegionNavigation.Services
         /// <param name="data">PLC 传来的数据字典</param>
         Task ProcessUpDropHourlyDataAsync(string deviceName, Dictionary<string, object>? data);
     }
-    internal class UpDropHourlyCapacityService : IUpDropHourlyCapacityService
+    public class UpDropHourlyCapacityService : IUpDropHourlyCapacityService
     {
         private readonly ISqlSugarClient _db;
 
