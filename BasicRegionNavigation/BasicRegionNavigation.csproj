@@ -9,12 +9,6 @@
 		<ApplicationIcon>EProject.ico</ApplicationIcon>
 	</PropertyGroup>
 	<ItemGroup>
-	  <Compile Remove="新文件夹\**" />
-	  <EmbeddedResource Remove="新文件夹\**" />
-	  <None Remove="新文件夹\**" />
-	  <Page Remove="新文件夹\**" />
-	</ItemGroup>
-	<ItemGroup>
 		<None Remove="EProject.ico" />
 		<None Remove="EProject.png" />
 		<None Remove="Resources\ArmPic.png" />
@@ -62,8 +56,11 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" />
 		<PackageReference Include="Microsoft.Web.WebView2" />
+		<PackageReference Include="Moq" />
 		<PackageReference Include="Newtonsoft.Json" />
 		<PackageReference Include="NuGet.exe" />
+		<PackageReference Include="NUnit" />
+		<PackageReference Include="NUnit3TestAdapter" />
 		<PackageReference Include="Prism.Core" />
 		<PackageReference Include="Prism.DryIoc" />
 		<PackageReference Include="Serilog" />
