@@ -61,7 +61,7 @@ namespace BasicRegionNavigation.ViewModels
 
         // ========================== 构造函数 ==========================
         public ICommand OpenDashboardCommand { get; }
-        public MainWindowViewModel(IRegionManager regionManager, Func<DashboardWindow> dashboardFactory, IConfigService configService)
+        public MainWindowViewModel(IMiddleFrameBusinessServices middleFrameBusinessServices,IRegionManager regionManager, Func<DashboardWindow> dashboardFactory, IConfigService configService)
         {
             _regionManager = regionManager;
             _configService = configService;
@@ -86,7 +86,16 @@ namespace BasicRegionNavigation.ViewModels
             Title_en = _configService.GetConfigValue("Title_en");
             OpenDashboardCommand = new MyModbus.RelayCommand(_ => OpenDashboard());
 
+            _middleFrameBusinessServices = middleFrameBusinessServices;
+
+            //_middleFrameBusinessServices.ProductCollectionMissionStart();
+
+
+
         }
+
+        IMiddleFrameBusinessServices _middleFrameBusinessServices;
+
         private void OpenDashboard()
         {
             var win = _dashboardFactory();

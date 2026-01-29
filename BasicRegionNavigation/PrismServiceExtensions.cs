@@ -34,6 +34,12 @@ namespace BasicRegionNavigation.Helper
 
 
             services.AddSingleton<IModbusService, ModbusService>();
+            services.AddSingleton<IFlipperHourlyCapacityService, FlipperHourlyCapacityService>();
+            services.AddSingleton<IUpDropHourlyCapacityService, UpDropHourlyCapacityService>();
+            services.AddSingleton<IProductionService, ProductionService>();
+            services.AddSingleton<IMiddleFrameBusinessServices, MiddleFrameBusinessServices>();
+
+
 
         }
 

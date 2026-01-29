@@ -23,14 +23,14 @@ namespace BasicRegionNavigation.Tests
         public Dictionary<string, Action<TagData>> RegisteredSubscriptions { get; } = new Dictionary<string, Action<TagData>>();
 
         // 覆盖基类的 Subscribe 方法 (使用 new 关键字隐藏原方法)
-        public new void Subscribe(string tagName, Action<TagData> handler)
+        public override void Subscribe(string tagName, Action<TagData> handler)
         {
             // 当业务代码调用 Subscribe 时，我们不连硬件，而是把它的请求记录下来
             RegisteredSubscriptions[tagName] = handler;
         }
 
         // 覆盖基类的 GetValue 方法
-        public new object GetValue(string tagName)
+        public override object GetValue(string tagName)
         {
             // 当业务代码想读数据时，我们从“模拟内存”里查给它
             if (MemoryMap.ContainsKey(tagName))

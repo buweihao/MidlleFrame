@@ -14,6 +14,9 @@ namespace BasicRegionNavigation.Services
     {
         private readonly ISqlSugarClientFactory _factory;
 
+
+
+
         /// <summary>
         /// 处理 PLC 数据（统一入口）
         /// </summary>
