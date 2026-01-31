@@ -1,6 +1,7 @@
 ﻿using MyDatabase;
 using SqlSugar;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,141 +9,140 @@ using System.Threading.Tasks;
 
 namespace BasicRegionNavigation.Services
 {
-    /// <summary>
-    /// 翻转台小时产能存储的服务接口
-    /// </summary>
-    public interface IFlipperHourlyCapacityService
+    public interface IFlipperHourlyService
     {
-        Task ProcessFlipperHourlyDataAsync(string plcName, Dictionary<string, object>? data);
-        event Action<string, string, object> OnModuleDataChanged;
-        Task QueryAndBroadcastAsync(string deviceName, DateTime start, DateTime end);
+        Task ProcessFlipperHourlyDataAsync(string deviceName, Dictionary<string, object> data);
     }
 
-    /// <summary>
-    /// 服务实现类
-    /// </summary>
-    public class FlipperHourlyCapacityService : IFlipperHourlyCapacityService
+    public class FlipperHourlyService : IFlipperHourlyService
     {
-        // 使用你定义的泛型仓储接口
-        private readonly IRepository<FlipperHourlyCapacityRecord> _db;
+        private readonly IRepository<FlipperHourlyRecord> _repo;
 
-        public event Action<string, string, object> OnModuleDataChanged;
+        // 内存状态缓存 (用于计算增量)
+        private static readonly ConcurrentDictionary<string, DeviceState> _deviceStates
+            = new ConcurrentDictionary<string, DeviceState>();
 
-        // 构造函数注入泛型仓储
-        public FlipperHourlyCapacityService(IRepository<FlipperHourlyCapacityRecord> db)
+        public FlipperHourlyService(IRepository<FlipperHourlyRecord> repo)
         {
-            _db = db;
+            _repo = repo;
         }
 
-        public async Task QueryAndBroadcastAsync(string deviceName, DateTime start, DateTime end)
+        public async Task ProcessFlipperHourlyDataAsync(string deviceName, Dictionary<string, object> data)
         {
-            // 1. 从数据库查数据
-            // 修改点：因为 IRepository 封装了 Queryable，我们使用 GetListAsync 获取符合条件的数据
-            // 注意：你的仓储 GetListAsync 不直接支持 OrderBy，我们取回数据后在内存中排序
-            var rawList = await _db.GetListAsync(x =>
-                x.DeviceName == deviceName &&
-                x.CreateTime >= start &&
-                x.CreateTime <= end
-            );
+            if (data == null || data.Count == 0) return;
 
-            // 内存排序 (数据量小，性能无影响)
-            var list = rawList.OrderBy(x => x.CreateTime).ToList();
+            // 1. 提取 TotalCapacity 用于计算增量
+            int currTotalCap = GetInt(data, "TotalCapacity");
 
-            // 2. 数据处理：填满时间轴 (示例逻辑保持不变)
-            // 假设我们要生成最近 24 小时的数据，这里做简单映射
-            var values = list.Select(x => (double)(x.HourlyCapacity ?? 0)).ToArray();
-
-            // 3. 打包 DTO
-            var dto = new ColumnChartDto
+            // 2. 获取状态并计算增量
+            var state = _deviceStates.GetOrAdd(deviceName, new DeviceState
             {
-                IsUp = deviceName.Contains("Up"),
-                Values = values,
-                StartTime = start,
-                EndTime = end,
-                TimeUnit = Unit.时
-            };
+                LastTotalCapacity = currTotalCap,
+                IsFirstRun = true
+            });
 
-            // 4. 发送广播
-            string moduleId = ParseModuleId(deviceName);
-            OnModuleDataChanged?.Invoke(moduleId, "Column", dto);
-        }
+            int deltaCap = CalculateDelta(currTotalCap, state.LastTotalCapacity);
 
-        private string ParseModuleId(string deviceName)
-        {
-            // 简单解析逻辑
-            if (string.IsNullOrEmpty(deviceName) || !deviceName.Contains("_")) return deviceName;
-            var parts = deviceName.Split('_');
-            if (parts.Length >= 2) return parts[0] + "_" + parts[1];
-            return deviceName;
-        }
-
-        public async Task ProcessFlipperHourlyDataAsync(string plcName, Dictionary<string, object> data)
-        {
-            if (data == null) return;
-
-            // 1. 将 Dictionary 转为实体类
-            var record = new FlipperHourlyCapacityRecord
+            if (state.IsFirstRun)
             {
-                DeviceName = plcName, // 不需要 .ToString()，本身就是 string
+                deltaCap = 0;
+                state.IsFirstRun = false;
+            }
+            state.LastTotalCapacity = currTotalCap;
+
+            // 3. 构造记录
+            var record = new FlipperHourlyRecord
+            {
+                DeviceName = deviceName,
+
+                // 字符串字段
+                ProjectNumber = GetString(data, "Hourly_ProjectNo"),
+                ProductType = GetString(data, "Hourly_ProductType"),
+                BatchNo = GetString(data, "Hourly_BatchNo"),
+                AnodeType = GetString(data, "Hourly_AnodeType"),
+                MaterialCategory = GetString(data, "Hourly_MaterialCategory"),
+
+                // 产能数据
+                HourlyCapacity = deltaCap,
+                RawTotalCapacity = currTotalCap,
+
+                // 统计数据
+                HourlyStandbyTimeMin = GetInt(data, "Hourly_StandbyTimeMin"),
+                HourlyFaultTimeMin = GetInt(data, "Hourly_FaultTimeMin"),
+                HourlyFaultCount = GetInt(data, "Hourly_FaultCount"),
+                HourlyMixingQty = GetInt(data, "Hourly_MixingQty"),
+                HourlyScanNGQty = GetInt(data, "Hourly_ScanNGQty"),
+                HourlySysFeedbackQty = GetInt(data, "Hourly_SysFeedbackQty"),
+
                 CreateTime = DateTime.Now
             };
 
-            // 反射赋值逻辑保持不变
-            foreach (var item in data)
-            {
-                var prop = typeof(FlipperHourlyCapacityRecord).GetProperty(item.Key);
-                // 增加判断：属性存在且可写
-                if (prop != null && prop.CanWrite && item.Value != null)
-                {
-                    try
-                    {
-                        // 处理 Nullable 类型转换
-                        var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                        var val = Convert.ChangeType(item.Value, targetType);
-                        prop.SetValue(record, val);
-                    }
-                    catch
-                    {
-                        // 忽略类型转换失败，防止单个字段错误导致整个记录丢失
-                    }
-                }
-            }
+            // 4. 入库
+            await _repo.InsertAsync(record);
+        }
 
-            // 2. 插入数据库
-            // 修改点：使用 IRepository 提供的 InsertAsync 方法
-            await _db.InsertAsync(record);
+        private int CalculateDelta(int current, int last)
+        {
+            int delta = current - last;
+            if (delta < 0) return current; // 处理清零
+            return delta;
+        }
+
+        private int GetInt(Dictionary<string, object> d, string key)
+        {
+            if (d.TryGetValue(key, out var val) && val != null)
+                try { return Convert.ToInt32(val); } catch { return 0; }
+            return 0;
+        }
+
+        private string GetString(Dictionary<string, object> d, string key)
+        {
+            return d.TryGetValue(key, out var val) ? val?.ToString() ?? "-" : "-";
+        }
+
+        private class DeviceState
+        {
+            public int LastTotalCapacity { get; set; }
+            public bool IsFirstRun { get; set; }
         }
     }
 
-    [SugarTable("FlipperHourlyCapacity_Record")]
-    public class FlipperHourlyCapacityRecord
+    [SugarTable("Flipper_Hourly_Record")]
+    public class FlipperHourlyRecord
     {
-        [SugarColumn(IsPrimaryKey = true)]
+        [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get; set; }
 
-        // --- 工序 1 (上翻转台、下翻转台) ---
+        // 设备名 (如 "1_PLC_Flipper")
+        public string? DeviceName { get; set; }
 
-        public string? DeviceName { get; set; } = "-";
+        // --- 业务字段 ---
+        public string? ProjectNumber { get; set; } = "-";     // Hourly_ProjectNo
+        public string? ProductType { get; set; } = "-";       // Hourly_ProductType
+        public string? BatchNo { get; set; } = "-";           // Hourly_BatchNo
+        public string? AnodeType { get; set; } = "-";         // Hourly_AnodeType
+        public string? MaterialCategory { get; set; } = "-";  // Hourly_MaterialCategory
 
-        // 字符串类型初始值：设为 "-" 避免 UI 显示空白或数据库 Null 引起异常
-        public string? HourlyProductTypeFlag { get; set; } = "-";
-        public string? HourlyProjectNumber { get; set; } = "-";
-        public string? HourlyBatch { get; set; } = "-";
-        public string? HourlyAnodeType { get; set; } = "-";
-        public string? HourlyMaterialCategory { get; set; } = "-";
+        // --- 核心统计数据 ---
 
-        // 数值类型初始值：设为 -1，作为“数据未就绪”的标记
-        public int? HourlyCapacity { get; set; } = -1;
-        public int? HourlyStandbyTime { get; set; } = -1;
-        public int? HourlyFaultTime { get; set; } = -1;
+        // 小时产能 (计算得出的增量)
+        public int HourlyCapacity { get; set; } = 0;
 
-        public short? HourlyFaultCount { get; set; } = -1;
-        public short? HourlyMixCount { get; set; } = -1;
-        public short? HourlyScanNGCount { get; set; } = -1;
-        public short? HourlySystemFeedbackCount { get; set; } = -1;
+        // 原始累计产能 (留底)
+        public int RawTotalCapacity { get; set; } = 0;
 
-        // 时间初始值：直接给当前系统时间
-        public DateTime? CreateTime { get; set; } = DateTime.Now;
+        // --- 其他统计字段 (PLC直接读值) ---
+        public int HourlyStandbyTimeMin { get; set; } = 0;
+        public int HourlyFaultTimeMin { get; set; } = 0;
+        public int HourlyFaultCount { get; set; } = 0;
+
+        // 翻转台特有字段
+        public int HourlyMixingQty { get; set; } = 0;        // 混料数量
+        public int HourlyScanNGQty { get; set; } = 0;        // 扫码NG数量
+        public int HourlySysFeedbackQty { get; set; } = 0;   // 系统反馈数量
+
+        // 记录时间
+        public DateTime CreateTime { get; set; } = DateTime.Now;
     }
 
     public class ColumnChartDto

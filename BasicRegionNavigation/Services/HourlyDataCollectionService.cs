@@ -58,7 +58,7 @@ namespace My.Services
 
             using (var scope = _serviceProvider.CreateScope())
             {
-                var dbService = scope.ServiceProvider.GetRequiredService<IUpDropHourlyCapacityService>();
+                var dbService = scope.ServiceProvider.GetRequiredService<IUpDropHourlyService>();
 
                 // 1. 筛选产能模组
                 var targetDevices = _devices
@@ -126,7 +126,7 @@ namespace My.Services
             };
 
                     // 6. 存入数据库
-                    await dbService.ProcessUpDropHourlyDataAsync(device.DeviceId, dataToSave);
+                    await dbService.ProcessHourlyDataAsync(device.DeviceId, dataToSave);
                 }
             }
         }

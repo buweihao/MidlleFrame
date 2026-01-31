@@ -44,8 +44,8 @@ namespace BasicRegionNavigation.Helper
 
 
             services.AddSingleton<IModbusService, ModbusService>();
-            services.AddSingleton<IFlipperHourlyCapacityService, FlipperHourlyCapacityService>();
-            services.AddSingleton<IUpDropHourlyCapacityService, UpDropHourlyCapacityService>();
+            services.AddSingleton<IFlipperHourlyService, FlipperHourlyService>();
+            services.AddSingleton<IUpDropHourlyService, UpDropHourlyService>();
             services.AddSingleton<IProductionService, ProductionService>();
             services.AddSingleton<IMiddleFrameBusinessServices, MiddleFrameBusinessServices>();
 
@@ -122,9 +122,9 @@ namespace BasicRegionNavigation.Helper
 
             // 注册 Store 和相关 Service
             services.AddMySqlSugarStore(dbConfig
-                , typeof(FlipperHourlyCapacityRecord)
+                , typeof(FlipperHourlyRecord)
                 , typeof(ProductionRecord)
-                , typeof(UpDropHourlyCapacityRecord)
+                , typeof(UpDropHourlyRecord)
                 , typeof(DeviceLog)
             );
 
@@ -132,4 +132,4 @@ namespace BasicRegionNavigation.Helper
             //services.AddTransient<IUpDropHourlyCapacityService, UpDropHourlyCapacityService>();
         }
     }
-}
+}   

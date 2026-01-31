@@ -71,43 +71,63 @@ namespace BasicRegionNavigation.Services
                     // === 场景 A：第一道工序（上料） ===
                     case StationProcessType.Entry_Upload:
                         {
-                            var existingItem = await _prodRepo.GetAsync(x => x.ProductCode == context.IdentityValue);
+                            // 1. 解析产品码：按 ",," 分割，并去除空白项
+                            // 假设传入的是 "SN001,,SN002,,SN003"
+                            string rawInput = context.IdentityValue ?? string.Empty;
+                            string[] productCodes = rawInput.Split(new string[] { ",," }, StringSplitOptions.RemoveEmptyEntries);
 
-                            if (existingItem == null)
+                            _logger.Info($"[上料-批量] 收到请求，原始值: {rawInput}，解析数量: {productCodes.Length}");
+
+                            if (productCodes.Length == 0)
                             {
-                                // [新增]
-                                var newItem = new ProductionRecord
-                                {
-                                    ProductCode = context.IdentityValue,
-                                    UpLoadDeivceName = context.DeviceId,
-                                    UpLoad_Time = DateTime.Now,
-                                    CreateTime = DateTime.Now,
-                                    IsCompleted = false
-                                };
-
-                                await _prodRepo.InsertAsync(newItem);
-
-                                // Logger: 调试用
-                                _logger.Info($"[上料-新增] SN: {context.IdentityValue} 入库成功");
-
-                                // LogRepo: 数据库留痕 (仅关键节点)
-                                await _logRepo.InsertAsync(new DeviceLog
-                                {
-                                    Module = context.DeviceId,
-                                    Message = $"产品上线: {context.IdentityValue}",
-                                    CreateTime = DateTime.Now
-                                });
+                                _logger.Warn($"[上料-警告] 解析到的产品码列表为空，跳过处理。Raw: {rawInput}");
+                                break;
                             }
-                            else
+
+                            // 2. 遍历处理每一个产品码
+                            foreach (var code in productCodes)
                             {
-                                // [更新]
-                                existingItem.UpLoadDeivceName = context.DeviceId;
-                                existingItem.UpLoad_Time = DateTime.Now;
+                                string currentSn = code.Trim(); // 去除可能的首尾空格
+                                if (string.IsNullOrWhiteSpace(currentSn)) continue;
 
-                                await _prodRepo.UpdateAsync(existingItem);
+                                var existingItem = await _prodRepo.GetAsync(x => x.ProductCode == currentSn);
 
-                                // Logger: 调试用 (更新通常不需要写 LogRepo，除非业务要求严格)
-                                _logger.Info($"[上料-更新] SN: {context.IdentityValue} 更新位置信息");
+                                if (existingItem == null)
+                                {
+                                    // [新增]
+                                    var newItem = new ProductionRecord
+                                    {
+                                        ProductCode = currentSn,
+                                        UpLoadDeivceName = context.DeviceId,
+                                        UpLoad_Time = DateTime.Now,
+                                        CreateTime = DateTime.Now,
+                                        IsCompleted = false
+                                    };
+
+                                    await _prodRepo.InsertAsync(newItem);
+
+                                    // Logger: 调试用
+                                    _logger.Info($"[上料-新增] SN: {currentSn} 入库成功 (Batch Item)");
+
+                                    // LogRepo: 数据库留痕 (仅关键节点)
+                                    await _logRepo.InsertAsync(new DeviceLog
+                                    {
+                                        Module = context.DeviceId,
+                                        Message = $"产品上线: {currentSn}",
+                                        CreateTime = DateTime.Now
+                                    });
+                                }
+                                else
+                                {
+                                    // [更新]
+                                    existingItem.UpLoadDeivceName = context.DeviceId;
+                                    existingItem.UpLoad_Time = DateTime.Now;
+
+                                    await _prodRepo.UpdateAsync(existingItem);
+
+                                    // Logger: 调试用
+                                    _logger.Info($"[上料-更新] SN: {currentSn} 更新位置信息 (Batch Item)");
+                                }
                             }
                         }
                         break;
@@ -115,50 +135,70 @@ namespace BasicRegionNavigation.Services
                     // === 场景 B：中间工序（上翻转台） ===
                     case StationProcessType.Process_Flip:
                         {
-                            var item = await _prodRepo.GetAsync(x => x.ProductCode == context.IdentityValue);
+                            // 1. 解析产品码：按分号 ";" 分割
+                            string rawInput = context.IdentityValue ?? string.Empty;
+                            string[] productCodes = rawInput.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
-                            if (item != null)
+                            _logger.Info($"[翻转-批量] 收到请求，原始值: {rawInput}，解析数量: {productCodes.Length}");
+
+                            if (productCodes.Length == 0)
                             {
-                                // 安全提取数据
-                                string? fixture = context.PlcData.TryGetValue("FixtureCode", out var fVal) ? fVal?.ToString() : null;
-                                string? projNum = context.PlcData.TryGetValue("ProjectNumber", out var pVal) ? pVal?.ToString() : null;
-                                string? category = context.PlcData.TryGetValue("ProductCategory", out var cVal) ? cVal?.ToString() : null;
-
-                                // 更新属性
-                                item.UpperHangFlipDeivceName = context.DeviceId;
-                                item.UpperHangFlip_Time = DateTime.Now;
-                                if (fixture != null) item.FixtureCode = fixture;
-                                if (projNum != null) item.ProjectNumber = projNum;
-                                if (category != null) item.ProductCategory = category;
-
-                                await _prodRepo.UpdateAsync(item);
-
-                                // Logger: 记录详细变更，方便调试挂具号是否对应
-                                _logger.Info($"[翻转-绑定] SN: {context.IdentityValue} | 挂具: {fixture} | 项目: {projNum}");
-
-                                // LogRepo: 数据库留痕 (业务流转节点)
-                                await _logRepo.InsertAsync(new DeviceLog
-                                {
-                                    Module = context.DeviceId,
-                                    Message = $"翻转台流转: {context.IdentityValue}", // 仅存简短信息
-                                    CreateTime = DateTime.Now
-                                });
+                                _logger.Warn($"[翻转-警告] 解析到的产品码列表为空，跳过处理。");
+                                break;
                             }
-                            else
+
+                            // 2. 预先提取公共数据 (同一批翻转通常共享挂具号和项目信息)
+                            string? fixture = context.PlcData.TryGetValue("FixtureCode", out var fVal) ? fVal?.ToString() : null;
+                            string? projNum = context.PlcData.TryGetValue("ProjectNumber", out var pVal) ? pVal?.ToString() : null;
+                            string? category = context.PlcData.TryGetValue("ProductCategory", out var cVal) ? cVal?.ToString() : null;
+
+                            // 3. 遍历每一个产品码进行更新
+                            foreach (var code in productCodes)
                             {
-                                // 异常流程：有物理产品但无数据
-                                string errorMsg = $"[逻辑异常] 翻转台收到 SN {context.IdentityValue}，但数据库未找到上料记录";
+                                string currentSn = code.Trim();
+                                if (string.IsNullOrWhiteSpace(currentSn)) continue;
 
-                                // Logger: 记录为 Error
-                                _logger.Error(errorMsg);
+                                var item = await _prodRepo.GetAsync(x => x.ProductCode == currentSn);
 
-                                // LogRepo: 这种异常情况建议入库，方便运维查询
-                                await _logRepo.InsertAsync(new DeviceLog
+                                if (item != null)
                                 {
-                                    Module = context.DeviceId,
-                                    Message = "异常: 未知产品流转",
-                                    CreateTime = DateTime.Now
-                                });
+                                    // 更新属性
+                                    item.UpperHangFlipDeivceName = context.DeviceId;
+                                    item.UpperHangFlip_Time = DateTime.Now;
+
+                                    if (fixture != null) item.FixtureCode = fixture;
+                                    if (projNum != null) item.ProjectNumber = projNum;
+                                    if (category != null) item.ProductCategory = category;
+
+                                    await _prodRepo.UpdateAsync(item);
+
+                                    // Logger: 记录详细变更
+                                    _logger.Info($"[翻转-绑定] SN: {currentSn} | 挂具: {fixture} | 项目: {projNum}");
+
+                                    // LogRepo: 数据库留痕 (业务流转节点)
+                                    await _logRepo.InsertAsync(new DeviceLog
+                                    {
+                                        Module = context.DeviceId,
+                                        Message = $"翻转台流转: {currentSn}",
+                                        CreateTime = DateTime.Now
+                                    });
+                                }
+                                else
+                                {
+                                    // 异常流程：有物理产品但无数据
+                                    string errorMsg = $"[逻辑异常] 翻转台收到 SN {currentSn}，但数据库未找到上料记录 (Batch Item)";
+
+                                    // Logger: 记录为 Error
+                                    _logger.Error(errorMsg);
+
+                                    // LogRepo: 记录异常
+                                    await _logRepo.InsertAsync(new DeviceLog
+                                    {
+                                        Module = context.DeviceId,
+                                        Message = $"异常: 未知产品 {currentSn}",
+                                        CreateTime = DateTime.Now
+                                    });
+                                }
                             }
                         }
                         break;

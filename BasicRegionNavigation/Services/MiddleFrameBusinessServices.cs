@@ -12,6 +12,10 @@ using System.Threading.Tasks;
 
 namespace BasicRegionNavigation.Services
 {
+
+
+
+
     public interface IMiddleFrameBusinessServices
     {
         //中框阳极上下挂的业务内容
@@ -36,22 +40,58 @@ namespace BasicRegionNavigation.Services
     }
     public class MiddleFrameBusinessServices : IMiddleFrameBusinessServices
     {
-        private readonly IFlipperHourlyCapacityService _flipperHourlyCapacityService;
-        private readonly IUpDropHourlyCapacityService _upDropHourlyCapacityService;
+        private readonly IFlipperHourlyService _flipperHourlyService;
+        private readonly IUpDropHourlyService _upDropHourlyCapacityService;
         private readonly DataBus _bus;
         private readonly IProductionService _productionService;
         private readonly DataCollectionEngine _engine;
 
-        public MiddleFrameBusinessServices(DataCollectionEngine engine, DataBus bus, IProductionService productionService, IFlipperHourlyCapacityService flipperHourlyCapacityService, IUpDropHourlyCapacityService upDropHourlyCapacityService)
+        public MiddleFrameBusinessServices(DataCollectionEngine engine, DataBus bus, IProductionService productionService, IFlipperHourlyService flipperHourlyService, IUpDropHourlyService upDropHourlyCapacityService)
         {
             //构造函数
-            _flipperHourlyCapacityService = flipperHourlyCapacityService;
+            _flipperHourlyService = flipperHourlyService;
             _upDropHourlyCapacityService = upDropHourlyCapacityService;
             _bus = bus;
             _productionService = productionService;
             _engine = engine;
         }
+        /// <summary>
+        /// [入口] 启动自动采集任务 (更新版)
+        /// 确保此方法只被调用一次
+        /// </summary>
+        public void StartHourlyCollectionTask()
+        {
+            Task.Factory.StartNew(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        // 1. 计算等待时间 (对齐到 xx:59:59)
+                        var now = DateTime.Now;
+                        var nextTarget = new DateTime(now.Year, now.Month, now.Day, now.Hour, 59, 59);
+                        if (now >= nextTarget) nextTarget = nextTarget.AddHours(1);
+                        var delay = nextTarget - now;
 
+                        if (delay.TotalMilliseconds > 0) await Task.Delay(delay);
+
+                        // 2. 执行所有设备的采集任务
+                        // 供料机采集
+                        FeedersHourlyDataCollectionMissionStart();
+
+                        // [新增] 翻转台采集
+                        FlipperHourlyDataCollectionMissionStart();
+
+                        // 3. 防止重复触发
+                        await Task.Delay(2000);
+                    }
+                    catch (Exception ex)
+                    {
+                        await Task.Delay(60000);
+                    }
+                }
+            }, TaskCreationOptions.LongRunning);
+        }
 
         #region  业务一、产品信息采集
         private const string ModuleId = "1"; // 建议放入配置或作为类属性
@@ -178,20 +218,134 @@ namespace BasicRegionNavigation.Services
         #endregion
 
         #region 业务二、供料机小时数据采集
+        /// <summary>
+        /// [业务逻辑] 执行一次数据采集
+        /// </summary>
         public void FeedersHourlyDataCollectionMissionStart()
         {
-            //小时数据采集任务只会在每小时的最后一分钟触发,可以直接从DataBus获取对应的点位数据
-            //_upDropHourlyCapacityService.ProcessUpDropHourlyDataAsync();
-        }
+            // 1. 定义模组列表
+            string[] modules = new[] { "1", "2" };
 
+            // 2. 定义设备模板
+            string[] feeders = new[] { "PLC_Feeder_A", "PLC_Feeder_B" };
+
+            // 3. 遍历采集
+            foreach (var module in modules)
+            {
+                foreach (var templateDeviceName in feeders)
+                {
+                    try
+                    {
+                        // A. 构造真实设备ID (如 "1_PLC_Feeder_A")
+                        string realDeviceId = ModbusKeyHelper.BuildDeviceId(module, templateDeviceName);
+
+                        // B. 构造点位名称
+                        // [重点] 产能点位：使用 "_TotalCapacity" (累计值)
+                        string tagTotalCap = ModbusKeyHelper.Build(realDeviceId, null, "TotalCapacity");
+
+                        // 项目号
+                        string tagProject = ModbusKeyHelper.Build(realDeviceId, null, "ProjectNo");
+
+                        // [重点] 其他统计点位：使用 "_Hourly_xxx" (PLC提供的统计值)
+                        string tagStandby = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_StandbyTimeMin");
+                        string tagFaultTime = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_FaultTimeMin");
+                        string tagFaultCount = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_FaultCount");
+                        string tagSystemNG = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_SystemNG");
+                        string tagMaterialLost = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_MaterialLost");
+
+                        // C. 从 DataBus 获取数据
+                        var dataPayload = new Dictionary<string, object>();
+
+                        // Key 必须与 Service 中的 GetInt 字符串一致
+                        dataPayload["TotalCapacity"] = _bus.GetValue(tagTotalCap);
+                        dataPayload["ProjectNo"] = _bus.GetValue(tagProject);
+
+                        dataPayload["Hourly_StandbyTimeMin"] = _bus.GetValue(tagStandby);
+                        dataPayload["Hourly_FaultTimeMin"] = _bus.GetValue(tagFaultTime);
+                        dataPayload["Hourly_FaultCount"] = _bus.GetValue(tagFaultCount);
+                        dataPayload["Hourly_SystemNG"] = _bus.GetValue(tagSystemNG);
+                        dataPayload["Hourly_MaterialLost"] = _bus.GetValue(tagMaterialLost);
+
+                        // D. 调用服务处理
+                        // 使用 Task.Run 确保不阻塞主线程，因为涉及到数据库IO
+                        Task.Run(() => _upDropHourlyCapacityService.ProcessHourlyDataAsync(realDeviceId, dataPayload));
+                    }
+                    catch (Exception ex)
+                    {
+                        // 这里可以记录单个设备的采集失败，互不影响
+                        // _logger.Error($"采集设备 {module}_{templateDeviceName} 失败", ex);
+                    }
+                }
+            }
+        }
         #endregion
 
         #region 业务三、翻转台小时数据采集
+        /// <summary>
+        /// [业务逻辑] 执行翻转台小时数据采集
+        /// </summary>
         public void FlipperHourlyDataCollectionMissionStart()
         {
-            //同样在最后一小时触发,直接从DataBus获取对应的点位数据
-            //_flipperHourlyCapacityService.ProcessFlipperHourlyDataAsync();
+            // 1. 定义模组列表
+            string[] modules = new[] { "1", "2" };
+
+            // 2. 翻转台设备模板名
+            string templateDeviceName = "PLC_Flipper";
+
+            foreach (var module in modules)
+            {
+                try
+                {
+                    // A. 构造真实设备ID (如 "1_PLC_Flipper")
+                    string realDeviceId = ModbusKeyHelper.BuildDeviceId(module, templateDeviceName);
+
+                    // B. 构造点位名称
+                    // 产能增量源
+                    string tagTotalCap = ModbusKeyHelper.Build(realDeviceId, null, "TotalCapacity");
+
+                    // 业务字段
+                    string tagProject = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_ProjectNo");
+                    string tagProductType = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_ProductType");
+                    string tagBatchNo = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_BatchNo");
+                    string tagAnodeType = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_AnodeType");
+                    string tagMaterialCat = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_MaterialCategory");
+
+                    // 统计字段
+                    string tagStandby = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_StandbyTimeMin");
+                    string tagFaultTime = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_FaultTimeMin");
+                    string tagFaultCount = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_FaultCount");
+                    string tagMixing = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_MixingQty");
+                    string tagScanNG = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_ScanNGQty");
+                    string tagSysFeedback = ModbusKeyHelper.Build(realDeviceId, null, "Hourly_SysFeedbackQty");
+
+                    // C. 获取数据
+                    var dataPayload = new Dictionary<string, object>();
+
+                    dataPayload["TotalCapacity"] = _bus.GetValue(tagTotalCap);
+                    dataPayload["Hourly_ProjectNo"] = _bus.GetValue(tagProject);
+                    dataPayload["Hourly_ProductType"] = _bus.GetValue(tagProductType);
+                    dataPayload["Hourly_BatchNo"] = _bus.GetValue(tagBatchNo);
+                    dataPayload["Hourly_AnodeType"] = _bus.GetValue(tagAnodeType);
+                    dataPayload["Hourly_MaterialCategory"] = _bus.GetValue(tagMaterialCat);
+
+                    dataPayload["Hourly_StandbyTimeMin"] = _bus.GetValue(tagStandby);
+                    dataPayload["Hourly_FaultTimeMin"] = _bus.GetValue(tagFaultTime);
+                    dataPayload["Hourly_FaultCount"] = _bus.GetValue(tagFaultCount);
+                    dataPayload["Hourly_MixingQty"] = _bus.GetValue(tagMixing);
+                    dataPayload["Hourly_ScanNGQty"] = _bus.GetValue(tagScanNG);
+                    dataPayload["Hourly_SysFeedbackQty"] = _bus.GetValue(tagSysFeedback);
+
+                    // D. 调用服务
+                    Task.Run(() => _flipperHourlyService.ProcessFlipperHourlyDataAsync(realDeviceId, dataPayload));
+                }
+                catch (Exception ex)
+                {
+                    // _logger.Error($"翻转台采集失败 {module}", ex);
+                }
+            }
         }
+
+
         #endregion
 
         #region 业务四、向供料机、翻转台下发数据
