@@ -1,4 +1,5 @@
-﻿using SqlSugar;
+﻿using MyDatabase;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,11 +22,13 @@ namespace BasicRegionNavigation.Services
     }
     public class UpDropHourlyCapacityService : IUpDropHourlyCapacityService
     {
-        private readonly ISqlSugarClient _db;
+        // 1. 修改：这里不再是 ISqlSugarClient，而是特定表的仓储
+        private readonly IRepository<UpDropHourlyCapacityRecord> _repo;
 
-        public UpDropHourlyCapacityService(ISqlSugarClient db)
+        // 2. 修改：构造函数必须注入这个仓储
+        public UpDropHourlyCapacityService(IRepository<UpDropHourlyCapacityRecord> repo)
         {
-            _db = db;
+            _repo = repo;
         }
 
         public async Task ProcessUpDropHourlyDataAsync(string deviceName, Dictionary<string, object> data)
@@ -51,7 +54,7 @@ namespace BasicRegionNavigation.Services
                 }
             }
 
-            await _db.Insertable(record).ExecuteCommandAsync();
+            await _repo.InsertAsync(record);
         }
     }
 
@@ -59,7 +62,7 @@ namespace BasicRegionNavigation.Services
     public class UpDropHourlyCapacityRecord
     {
         [SugarColumn(IsPrimaryKey = true)]
-        public long Id { get; set; }
+        public int Id { get; set; }
 
         public string? DeviceName { get; set; }
 

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using My.Services;
 using MyDatabase;
+using MyLog;
 using MyModbus;
 using SqlSugar;
 using System;
@@ -33,6 +34,15 @@ namespace BasicRegionNavigation.Helper
             services.AddSingleton<HourlyDataCollectionService>();
 
 
+            // 5. 配置 Log
+            // 将 IMyLogConfig 映射到已经注册的 IProductionService 实例
+            // 这样 MyLog 就会使用 IProductionService 中定义的配置
+            services.AddSingleton<IMyLogConfig>(sp => sp.GetRequiredService<IProductionService>());
+
+            // 注册 MyLog 服务
+            services.AddMyLogService();
+
+
             services.AddSingleton<IModbusService, ModbusService>();
             services.AddSingleton<IFlipperHourlyCapacityService, FlipperHourlyCapacityService>();
             services.AddSingleton<IUpDropHourlyCapacityService, UpDropHourlyCapacityService>();
@@ -62,11 +72,11 @@ namespace BasicRegionNavigation.Helper
             (Template: "PLC_Feeder_B",   ModuleId: "1", Ip: "127.0.0.3"),
             (Template: "PLC_Flipper",    ModuleId: "1", Ip: "127.0.0.1"),
 
-            (Template: "PLC_Peripheral", ModuleId: "2", Ip: "127.0.0.1"),
-            (Template: "PLC_Robot",      ModuleId: "2", Ip: "127.0.0.1"),
-            (Template: "PLC_Feeder_A",   ModuleId: "2", Ip: "127.0.0.2"),
-            (Template: "PLC_Feeder_B",   ModuleId: "2", Ip: "127.0.0.3"),
-            (Template: "PLC_Flipper",    ModuleId: "2", Ip: "127.0.0.1"),
+            //(Template: "PLC_Peripheral", ModuleId: "2", Ip: "127.0.0.1"),
+            //(Template: "PLC_Robot",      ModuleId: "2", Ip: "127.0.0.1"),
+            //(Template: "PLC_Feeder_A",   ModuleId: "2", Ip: "127.0.0.2"),
+            //(Template: "PLC_Feeder_B",   ModuleId: "2", Ip: "127.0.0.3"),
+            //(Template: "PLC_Flipper",    ModuleId: "2", Ip: "127.0.0.1"),
         };
 
                 var templatesToRemove = new HashSet<Device>();
@@ -111,10 +121,15 @@ namespace BasicRegionNavigation.Helper
             };
 
             // 注册 Store 和相关 Service
-            services.AddMySqlSugarStore(dbConfig);
+            services.AddMySqlSugarStore(dbConfig
+                , typeof(FlipperHourlyCapacityRecord)
+                , typeof(ProductionRecord)
+                , typeof(UpDropHourlyCapacityRecord)
+                , typeof(DeviceLog)
+            );
 
             //上下料机小时产能入库
-            services.AddTransient<IUpDropHourlyCapacityService, UpDropHourlyCapacityService>();
+            //services.AddTransient<IUpDropHourlyCapacityService, UpDropHourlyCapacityService>();
         }
     }
 }

@@ -89,11 +89,11 @@ namespace BasicRegionNavigation.ViewModels
 
         private void UpdateModel2Status()
         {
-            Model1LineColorUpLoad1 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Feeder_A"));
-            Model1LineColorUpLoad2 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Feeder_B"));
+            Model2LineColorUpLoad1 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Feeder_A"));
+            Model2LineColorUpLoad2 = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Feeder_B"));
 
-            Model1LineColorAround = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Flipper"));
-            Model1LineColorBatch = Model1LineColorAround;
+            Model2LineColorAround = GetStatusBrush(ModbusKeyHelper.BuildDeviceId("2", "PLC_Flipper"));
+            Model2LineColorBatch = Model2LineColorAround;
         }
 
         private void UpdateModel3Status() { /* ... */ }

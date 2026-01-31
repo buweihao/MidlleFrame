@@ -78,41 +78,44 @@ namespace BasicRegionNavigation.ViewModels
             string moduleId = "1";
 
             // --- A. 订阅状态 (Status) ---
-            // 这里的字符串 + "Status" = CurrentStatus 里的属性名
-            // 例如: "FeedLift1" -> FeedLift1Status
-            var statusFields = new string[]
+            // 字典映射：{ "UI属性名", "CSV中的点位后缀" }
+            var statusMapping = new Dictionary<string, string>
             {
-                "FeedLift1",
-                "FeedLift2",
-                "HangOk",          // 对应 HangOkStatus (注意：你的属性是 HangOkSensor，这里需修正，见下文注意)
-                "DropNgSensor",    // 对应 DropNgSensorStatus (如果你的属性叫 DropNgSensor，这里要传 DropNgSensor 吗? 见下文)
-                "UnLoadModule1",   // 对应 UnLoadModule1Status
-                "DropModule1"
+                // 周边墩子状态 (PLC_Peripheral)
+                { "FeedLift1",      "PLC_Peripheral_FeedStation1Status" },
+                { "FeedLift2",      "PLC_Peripheral_FeedStation2Status" },
+                { "HangOk",         "PLC_Peripheral_HangerOkStation1Status" }, // 对应 HangOkStatus
+                { "DropNgSensor",   "PLC_Peripheral_HangerNgStationStatus" },  // 对应 DropNgSensorStatus
+                
+                // 供料机与翻转台状态
+                { "UnLoadModule1",  "PLC_Feeder_A_Status" },   // 供料机A状态
+                { "DropModule1",    "PLC_Flipper_Status" }     // 翻转台状态
             };
 
             modbusService.SubscribeDynamicGroup(
                 moduleId: moduleId,
-                category: ModuleDataCategory.Status, // <--- 关键：标记为状态
-                locationPrefix: "IO",               // 假设PLC地址前缀是 IO
-                fields: statusFields
+                category: ModuleDataCategory.Status,
+                fieldMapping: statusMapping
             );
 
             // --- B. 订阅产能 (Capacity) ---
-            // 这里的字符串 + "Capacity" = CurrentStatus 里的属性名
-            // 例如: "UnLoadModule1" -> UnLoadModule1Capacity
-            var capacityFields = new string[]
+            var capacityMapping = new Dictionary<string, string>
             {
-                "UnLoadModule1", // 注意：这里和 Status 用了同一个词根！
-                "UnLoadModule2",
-                "DropModule1",
-                "DropModule2"
+                // 供料机产能
+                { "UnLoadModule1", "PLC_Feeder_A_TotalCapacity" }, // 供料机A 产能
+                { "UnLoadModule2", "PLC_Feeder_B_TotalCapacity" }, // 供料机B 产能
+                
+                // 翻转台产能
+                { "DropModule1",   "PLC_Flipper_TotalCapacity" }   // 翻转台 产能
+                
+                // 注意：CSV中没有找到 DropModule2 (第二个翻转台?) 对应的点位，已移除以防报错
+                // { "DropModule2", "???" } 
             };
 
             modbusService.SubscribeDynamicGroup(
                 moduleId: moduleId,
-                category: ModuleDataCategory.Capacity, // <--- 关键：标记为产能
-                locationPrefix: "Data",               // 假设PLC地址前缀是 Data
-                fields: capacityFields
+                category: ModuleDataCategory.Capacity,
+                fieldMapping: capacityMapping
             );
         }
         private void InitializeModules(string[] ids)

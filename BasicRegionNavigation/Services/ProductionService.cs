@@ -1,4 +1,6 @@
-﻿using MyDatabase;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MyDatabase;
+using MyLog;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -12,203 +14,278 @@ namespace BasicRegionNavigation.Services
 
     public class ProductionService : IProductionService
     {
-        private readonly ISqlSugarClientFactory _factory;
+        private ILoggerService _logger => _serviceProvider.GetRequiredService<ILoggerService>();
+        private readonly IServiceProvider _serviceProvider;
 
+        // 1. 明确注入：你需要操作哪两张表，就注入哪两个仓储
+        private readonly IRepository<DeviceLog> _logRepo;
+        private readonly IRepository<ProductionRecord> _prodRepo;
 
-
-
-        /// <summary>
-        /// 处理 PLC 数据（统一入口）
-        /// </summary>
-        /// <param name="plcName">PLC名称，用于区分工序逻辑</param>
-        /// <param name="identityKey">标识Key：工序1/2传SN，工序3传FixtureCode</param>
-        /// <param name="data">PLC读取的数据字典</param>
-
-        /// <summary>
-        /// 处理 PLC 数据（重构版）
-        /// </summary>
-        public async Task ProcessProductDataAsync(StationProcessContext context)
+        public ProductionService(
+            IServiceProvider serviceProvider,
+            IRepository<DeviceLog> logRepo,
+            IRepository<ProductionRecord> prodRepo)
         {
-            using var db = _factory.GetClient();
-
-            // 1. 记录原始日志 (Raw Log)
-            string jsonPayload = System.Text.Json.JsonSerializer.Serialize(context.PlcData);
-            await db.Insertable(new DeviceLog
-            {
-                Module = context.DeviceId,
-                // 清晰记录：当前是[什么工序]，标识是[什么]
-                Message = $"[{context.ProcessType}] Key: {context.IdentityValue} | Data: {jsonPayload}",
-                CreateTime = DateTime.Now
-            }).ExecuteCommandAsync();
-
-            // 2. 根据枚举分发业务逻辑
-            switch (context.ProcessType)
-            {
-                // === 场景 A：第一道工序（上料） ===
-                case StationProcessType.Entry_Upload:
-                    {
-                        var record = new ProductionRecord
-                        {
-                            ProductCode = context.IdentityValue, // 这里明确是 SN
-                            UpLoadDeivceName = context.DeviceId,
-                            UpLoad_Time = DateTime.Now,
-                        };
-
-                        await db.Storageable(record)
-                            .SplitInsert(it => !it.Any())
-                            .SplitUpdate(it => true)
-                            .ExecuteCommandAsync();
-                    }
-                    break;
-
-                // === 场景 B：中间工序（上翻转台） ===
-                case StationProcessType.Process_Flip:
-                    {
-                        // 尝试从数据字典里拿挂具号，拿不到就空
-                        string fixtureCode = context.PlcData.ContainsKey("FixtureCode")
-                                             ? context.PlcData["FixtureCode"]?.ToString()
-                                             : null;
-                        string projectNumber = context.PlcData.ContainsKey("ProjectNumber")
-                                             ? context.PlcData["ProjectNumber"]?.ToString()
-                                             : null;
-                        string productCategory = context.PlcData.ContainsKey("ProductCategory")
-                                             ? context.PlcData["ProductCategory"]?.ToString()
-                                             : null;
-                        await db.Updateable<ProductionRecord>()
-                            .SetColumns(it => new ProductionRecord
-                            {
-                                UpperHangFlipDeivceName = context.DeviceId,
-                                UpperHangFlip_Time = DateTime.Now,
-                                FixtureCode = fixtureCode,
-                                ProjectNumber = projectNumber,
-                                ProductCategory = productCategory
-
-    })
-                            .Where(it => it.ProductCode == context.IdentityValue) // Where SN = Key
-                            .ExecuteCommandAsync();
-                    }
-                    break;
-
-                // === 场景 C：特殊工序（下翻转台/解绑） ===
-                case StationProcessType.Exit_Unload:
-                    {
-                        // 1. 反查 SN (Key 是 FixtureCode)
-                        var record = await db.Queryable<ProductionRecord>()
-                            .OrderByDescending(it => it.CreateTime)
-                            .FirstAsync(it => it.FixtureCode == context.IdentityValue && !it.IsCompleted);
-
-                        if (record == null)
-                        {
-                            // 记录错误日志，或者触发报警
-                            Console.WriteLine($"[Error] 挂具 {context.IdentityValue} 未找到对应产品！设备: {context.DeviceId}");
-                            return;
-                        }
-
-                        // 2. 更新状态
-                        record.LowerHangFlipDeivceName = context.DeviceId;
-                        record.LowerHangFlip_Time = DateTime.Now;
-                        record.IsCompleted = true;
-                        record.FinishTime = DateTime.Now;
-
-                        // 3. 执行更新
-                        await db.Updateable(record)
-                            .UpdateColumns(it => new
-                            {
-                                it.LowerHangFlipDeivceName,
-                                it.LowerHangFlip_Time,
-                                it.IsCompleted,
-                                it.FinishTime
-                            })
-                            .ExecuteCommandAsync();
-                    }
-                    break;
-            }
+            _serviceProvider = serviceProvider;
+            _logRepo = logRepo;
+            _prodRepo = prodRepo;
         }
 
-        /// <summary>
-        /// 灵活查询生产记录
-        /// </summary>
-        /// <param name="startTime">开始时间（针对 CreateTime）</param>
-        /// <param name="endTime">结束时间</param>
-        /// <param name="filters">任意字段过滤字典，例如 Key="ProductCode", Value="SN123"</param>
+        public MyLogOptions Configure()
+        {
+            return new MyLogOptions
+            {
+                MinimumLevel = Serilog.Events.LogEventLevel.Verbose, // 演示：针对此服务的配置
+                EnableConsole = true,
+                EnableFile = true,
+                FilePath = "logs/ProductionService.log",
+                OutputTemplate = "{Timestamp:HH:mm:ss} [Service] {Message:lj}{NewLine}{Exception}"
+            };
+        }
+
+
+        public async Task ProcessProductDataAsync(StationProcessContext context)
+        {
+            // ---------------------------------------------------------
+            // 1. 调试日志 (Logger)：记录原始数据，方便排查 PLC 通讯问题
+            // ---------------------------------------------------------
+            string jsonPayload = "{}";
+            try
+            {
+                jsonPayload = System.Text.Json.JsonSerializer.Serialize(context.PlcData);
+                // 使用 Logger 记录详细报文
+                _logger.Info($"[{context.DeviceId}] 收到请求 | Type: {context.ProcessType} | Key: {context.IdentityValue} | Payload: {jsonPayload}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"[{context.DeviceId}] 数据序列化异常", ex);
+            }
+
+            try
+            {
+                // ---------------------------------------------------------
+                // 2. 业务逻辑处理
+                // ---------------------------------------------------------
+                switch (context.ProcessType)
+                {
+                    // === 场景 A：第一道工序（上料） ===
+                    case StationProcessType.Entry_Upload:
+                        {
+                            var existingItem = await _prodRepo.GetAsync(x => x.ProductCode == context.IdentityValue);
+
+                            if (existingItem == null)
+                            {
+                                // [新增]
+                                var newItem = new ProductionRecord
+                                {
+                                    ProductCode = context.IdentityValue,
+                                    UpLoadDeivceName = context.DeviceId,
+                                    UpLoad_Time = DateTime.Now,
+                                    CreateTime = DateTime.Now,
+                                    IsCompleted = false
+                                };
+
+                                await _prodRepo.InsertAsync(newItem);
+
+                                // Logger: 调试用
+                                _logger.Info($"[上料-新增] SN: {context.IdentityValue} 入库成功");
+
+                                // LogRepo: 数据库留痕 (仅关键节点)
+                                await _logRepo.InsertAsync(new DeviceLog
+                                {
+                                    Module = context.DeviceId,
+                                    Message = $"产品上线: {context.IdentityValue}",
+                                    CreateTime = DateTime.Now
+                                });
+                            }
+                            else
+                            {
+                                // [更新]
+                                existingItem.UpLoadDeivceName = context.DeviceId;
+                                existingItem.UpLoad_Time = DateTime.Now;
+
+                                await _prodRepo.UpdateAsync(existingItem);
+
+                                // Logger: 调试用 (更新通常不需要写 LogRepo，除非业务要求严格)
+                                _logger.Info($"[上料-更新] SN: {context.IdentityValue} 更新位置信息");
+                            }
+                        }
+                        break;
+
+                    // === 场景 B：中间工序（上翻转台） ===
+                    case StationProcessType.Process_Flip:
+                        {
+                            var item = await _prodRepo.GetAsync(x => x.ProductCode == context.IdentityValue);
+
+                            if (item != null)
+                            {
+                                // 安全提取数据
+                                string? fixture = context.PlcData.TryGetValue("FixtureCode", out var fVal) ? fVal?.ToString() : null;
+                                string? projNum = context.PlcData.TryGetValue("ProjectNumber", out var pVal) ? pVal?.ToString() : null;
+                                string? category = context.PlcData.TryGetValue("ProductCategory", out var cVal) ? cVal?.ToString() : null;
+
+                                // 更新属性
+                                item.UpperHangFlipDeivceName = context.DeviceId;
+                                item.UpperHangFlip_Time = DateTime.Now;
+                                if (fixture != null) item.FixtureCode = fixture;
+                                if (projNum != null) item.ProjectNumber = projNum;
+                                if (category != null) item.ProductCategory = category;
+
+                                await _prodRepo.UpdateAsync(item);
+
+                                // Logger: 记录详细变更，方便调试挂具号是否对应
+                                _logger.Info($"[翻转-绑定] SN: {context.IdentityValue} | 挂具: {fixture} | 项目: {projNum}");
+
+                                // LogRepo: 数据库留痕 (业务流转节点)
+                                await _logRepo.InsertAsync(new DeviceLog
+                                {
+                                    Module = context.DeviceId,
+                                    Message = $"翻转台流转: {context.IdentityValue}", // 仅存简短信息
+                                    CreateTime = DateTime.Now
+                                });
+                            }
+                            else
+                            {
+                                // 异常流程：有物理产品但无数据
+                                string errorMsg = $"[逻辑异常] 翻转台收到 SN {context.IdentityValue}，但数据库未找到上料记录";
+
+                                // Logger: 记录为 Error
+                                _logger.Error(errorMsg);
+
+                                // LogRepo: 这种异常情况建议入库，方便运维查询
+                                await _logRepo.InsertAsync(new DeviceLog
+                                {
+                                    Module = context.DeviceId,
+                                    Message = "异常: 未知产品流转",
+                                    CreateTime = DateTime.Now
+                                });
+                            }
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                // ---------------------------------------------------------
+                // 3. 异常处理
+                // ---------------------------------------------------------
+                // Logger: 记录完整堆栈，这是调试最关键的
+                _logger.Error($"[{context.DeviceId}] 业务处理崩溃", ex);
+
+                // LogRepo: 数据库记录简短错误，防止数据库爆炸
+                await _logRepo.InsertAsync(new DeviceLog
+                {
+                    Module = context.DeviceId,
+                    Message = $"系统错误: {ex.Message}",
+                    CreateTime = DateTime.Now
+                });
+            }
+        }
         public async Task<ObservableCollection<ProductionRecord>> GetProductionRecordsAsync(
             DateTime? startTime = null,
             DateTime? endTime = null,
             Dictionary<string, object>? filters = null)
         {
-            using var db = _factory.GetClient();
+            // 查询还是用仓储的 GetListAsync
+            // 由于 GetListAsync 只能传简单的 Expression，如果需要复杂动态查询，
+            // 这种情况下，我们需要稍微妥协一下：
+            // 方案 1：把数据全查出来（如果数据量不大），在内存里过滤 (Where + Reflection)。
+            // 方案 2：在 IRepository 接口里增加一个暴露 Client 的方法（稍微破坏封装，但实用）。
 
-            var query = db.Queryable<ProductionRecord>();
+            // 这里演示方案 1 (适合数据量 < 10000 条的场景)
 
-            // 1. 时间范围过滤
-            query.WhereIF(startTime.HasValue, it => it.CreateTime >= startTime.Value)
-                 .WhereIF(endTime.HasValue, it => it.CreateTime <= endTime.Value);
+            // 1. 先查出所有 (或者按时间查出大部分)
+            IEnumerable<ProductionRecord> list;
+            if (startTime.HasValue && endTime.HasValue)
+            {
+                list = await _prodRepo.GetListAsync(x => x.CreateTime >= startTime && x.CreateTime <= endTime);
+            }
+            else
+            {
+                list = await _prodRepo.GetAllAsync();
+            }
 
-            // 2. 动态字典过滤 (支持任意字段)
+            // 2. 内存动态过滤
             if (filters != null && filters.Count > 0)
             {
                 foreach (var filter in filters)
                 {
-                    // 检查字段是否存在，防止非法 Key 导致报错
-                    var property = typeof(ProductionRecord).GetProperty(filter.Key);
-                    if (property != null && filter.Value != null)
+                    var prop = typeof(ProductionRecord).GetProperty(filter.Key);
+                    if (prop != null && filter.Value != null)
                     {
-                        string fieldName = filter.Key;
-                        object fieldValue = filter.Value;
-
-                        // 使用动态字符串拼接 Where，支持多种类型转换
-                        // SqlSugar 会自动处理 SQL 注入风险
-                        query.Where($"{fieldName} = @val", new { val = fieldValue });
+                        string targetVal = filter.Value.ToString();
+                        list = list.Where(x =>
+                        {
+                            var val = prop.GetValue(x)?.ToString();
+                            return val == targetVal;
+                        });
                     }
                 }
             }
 
-            // 3. 执行查询并排序
-            var list = await query.OrderByDescending(it => it.CreateTime).ToListAsync();
-
-            // 4. 转换为 ObservableCollection 返回给 UI
-            return new ObservableCollection<ProductionRecord>(list);
+            // 3. 排序并返回
+            var sortedList = list.OrderByDescending(x => x.CreateTime).ToList();
+            return new ObservableCollection<ProductionRecord>(sortedList);
         }
-
     }
     [SugarTable("Production_Records")]
     public class ProductionRecord
     {
-        [SugarColumn(IsPrimaryKey = true)]
-        public long Id { get; set; }
+        [SugarColumn(IsPrimaryKey = true, IsIdentity = true)] // 这里的类型要跟你的数据库匹配，推荐用 int
+        public int Id { get; set; }
 
-        // --- 工序 1 (上料机A/B) --        //产品码-
+        // --- 工序 1 (上料机A/B) ---
         public string? ProductCode { get; set; }
-        public string? UpLoadDeivceName { get; set; }
-        public DateTime? UpLoad_Time { get; set; } // 记录这一步具体发生的时间
 
-        // --- 工序 2 (上翻转台) --        //挂具码、项目编号、产品类别
+        [SugarColumn(IsNullable = true)] // <--- 允许为空
+        public string? UpLoadDeivceName { get; set; }
+
+        [SugarColumn(IsNullable = true)] // <--- 允许为空
+        public DateTime? UpLoad_Time { get; set; }
+
+        // --- 工序 2 (上翻转台) ---
+        // 这些字段在第一步 Insert 时肯定没有值，必须设为 IsNullable = true
+        [SugarColumn(IsNullable = true)]
         public string? FixtureCode { get; set; }
+
+        [SugarColumn(IsNullable = true)]
         public string? ProjectNumber { get; set; }
+
+        [SugarColumn(IsNullable = true)]
         public string? ProductCategory { get; set; }
+
+        [SugarColumn(IsNullable = true)]
         public string? UpperHangFlipDeivceName { get; set; }
+
+        [SugarColumn(IsNullable = true)]
         public DateTime? UpperHangFlip_Time { get; set; }
 
-        // --- 工序 3 (下翻转台) ---      //下翻转
+        // --- 工序 3 (下翻转台) ---
+        [SugarColumn(IsNullable = true)]
         public string? LowerHangFlipDeivceName { get; set; }
+
+        [SugarColumn(IsNullable = true)]
         public DateTime? LowerHangFlip_Time { get; set; }
 
         // 最终状态
-        public DateTime CreateTime { get; set; } // 也就是上线时间
-        public DateTime? FinishTime { get; set; } // 下线时间
-        public bool IsCompleted { get; set; } // 是否所有工序都跑完了
+        public DateTime CreateTime { get; set; }
+
+        [SugarColumn(IsNullable = true)]
+        public DateTime? FinishTime { get; set; }
+
+        public bool IsCompleted { get; set; }
     }
     // 设备日志表
     [SugarTable("Device_Logs")]
     public class DeviceLog
     {
         [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
-        public long Id { get; set; }
+        public int Id { get; set; }
         public string Module { get; set; } // 来源模块 (例如: PLC, Vision)
         public string Message { get; set; }
         public DateTime CreateTime { get; set; }
     }
-    public interface IProductionService
+    public interface IProductionService: IMyLogConfig
     {
         Task ProcessProductDataAsync(StationProcessContext context);
         Task<ObservableCollection<ProductionRecord>> GetProductionRecordsAsync(

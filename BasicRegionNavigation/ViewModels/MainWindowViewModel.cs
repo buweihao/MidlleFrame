@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel; // 核心：替换 BindableBase
 using CommunityToolkit.Mvvm.Input;        // 核心：替换手动 Command 定义
 using Core;
 using HandyControl.Controls;
+using My.Services;
 using MyModbus;
 using Prism.Commands; // 保留 Prism 命令，用于导航
 using Prism.Mvvm;     // 如果不再使用 BindableBase，可以移除此引用，但 Prism.Regions 可能需要
@@ -61,7 +62,9 @@ namespace BasicRegionNavigation.ViewModels
 
         // ========================== 构造函数 ==========================
         public ICommand OpenDashboardCommand { get; }
-        public MainWindowViewModel(IMiddleFrameBusinessServices middleFrameBusinessServices,IRegionManager regionManager, Func<DashboardWindow> dashboardFactory, IConfigService configService)
+        public MainWindowViewModel(
+            IMiddleFrameBusinessServices flipperHourlyCapacityService,
+            IRegionManager regionManager, Func<DashboardWindow> dashboardFactory, IConfigService configService)
         {
             _regionManager = regionManager;
             _configService = configService;
@@ -86,15 +89,11 @@ namespace BasicRegionNavigation.ViewModels
             Title_en = _configService.GetConfigValue("Title_en");
             OpenDashboardCommand = new MyModbus.RelayCommand(_ => OpenDashboard());
 
-            _middleFrameBusinessServices = middleFrameBusinessServices;
-
-            //_middleFrameBusinessServices.ProductCollectionMissionStart();
-
-
-
+            _flipperHourlyCapacityService = flipperHourlyCapacityService;
+            _flipperHourlyCapacityService.ProductCollectionMissionStart();
         }
 
-        IMiddleFrameBusinessServices _middleFrameBusinessServices;
+        IMiddleFrameBusinessServices _flipperHourlyCapacityService;
 
         private void OpenDashboard()
         {

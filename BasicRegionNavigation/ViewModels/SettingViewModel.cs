@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core; // 假设 Global 在这里
+using MyModbus;
 using Prism.Events;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,9 @@ namespace BasicRegionNavigation.ViewModels
     {
         private readonly IEventAggregator _ea;
         private readonly IConfigService _configService;
+        private readonly DataCollectionEngine _engine;
+        private readonly IMiddleFrameBusinessServices  _middleFrameBusinessServices;
+
 
         // 缓存所有模组行对象 (最大支持 6 个模组，共 12 行)，避免重复创建
         private readonly List<TableRowViewModel> _allRowsCache = new();
@@ -34,10 +38,12 @@ namespace BasicRegionNavigation.ViewModels
         [ObservableProperty]
         private ObservableCollection<TableRowViewModel> _rowItems = new();
 
-        public SettingViewModel(IEventAggregator ea, IConfigService configService)
+        public SettingViewModel(IMiddleFrameBusinessServices middleFrameBusinessServices,DataCollectionEngine engine, IEventAggregator ea, IConfigService configService)
         {
             _ea = ea;
             _configService = configService;
+            _engine = engine;
+            _middleFrameBusinessServices = middleFrameBusinessServices;
 
             LoadConfigData();
             InitializeRows();
@@ -141,8 +147,11 @@ namespace BasicRegionNavigation.ViewModels
         {
             if (!ConfirmRowSettings(vm)) return;
 
-            // 调用原来的业务逻辑，现在 vm 自身包含了 ModuleNum 和 Position，不需要额外传参
-            await SendSetting2PLC(vm.ModuleNum, vm, vm.Position.ToString());
+            //下发
+            _middleFrameBusinessServices.SendSetting(vm.ModuleNum, vm);
+
+            //主动通知转产
+            _middleFrameBusinessServices.ChangeoverTrigger(vm.ModuleNum);
 
             // 通知变更
             NotifyChanges(vm);
@@ -190,12 +199,12 @@ namespace BasicRegionNavigation.ViewModels
             sb.AppendLine($"当前模块: {vm.ModuleName ?? "未命名"} (#{vm.ModuleNum})");
             sb.AppendLine("--------------------------------------------");
             sb.AppendLine($"项目代号:  {vm.SelectedProject ?? "未选择"}");
-            sb.AppendLine($"产品型号:  {vm.SelectedProductType ?? "未选择"}");
-            sb.AppendLine($"阳极类型:  {vm.SelectedAnodeType ?? "未选择"}");
-            sb.AppendLine($"产品颜色:  {vm.SelectedProductColor ?? "未选择"}");
-            sb.AppendLine($"材料类型:  {vm.SelectedMaterialType ?? "未选择"}");
-            sb.AppendLine($"批次号:    {vm.SelectBatchNumber ?? "未选择"}");
-            sb.AppendLine($"次数:      {vm.SelectedTimes ?? "未选择"}");
+            //sb.AppendLine($"产品型号:  {vm.SelectedProductType ?? "未选择"}");
+            //sb.AppendLine($"阳极类型:  {vm.SelectedAnodeType ?? "未选择"}");
+            //sb.AppendLine($"产品颜色:  {vm.SelectedProductColor ?? "未选择"}");
+            //sb.AppendLine($"材料类型:  {vm.SelectedMaterialType ?? "未选择"}");
+            //sb.AppendLine($"批次号:    {vm.SelectBatchNumber ?? "未选择"}");
+            //sb.AppendLine($"次数:      {vm.SelectedTimes ?? "未选择"}");
             sb.AppendLine("--------------------------------------------");
             sb.AppendLine("确认应用以上配置吗？");
 
@@ -213,11 +222,6 @@ namespace BasicRegionNavigation.ViewModels
             return result == MessageBoxResult.OK;
         }
 
-        public async Task SendSetting2PLC(int num, TableRowViewModel vm, string upDn)
-        {
-            // ... (保持原样)
-            await Task.CompletedTask;
-        }
     }
 
     // 重构后的 TableRowViewModel

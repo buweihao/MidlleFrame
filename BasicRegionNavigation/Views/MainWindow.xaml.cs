@@ -169,11 +169,6 @@ namespace BasicRegionNavigation.Views
             {
                 Global.LoadingManager.StopLoading();
             }
-
-
-
-
-
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)

@@ -1,4 +1,5 @@
-﻿using SqlSugar;
+﻿using MyDatabase;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,95 +9,108 @@ using System.Threading.Tasks;
 namespace BasicRegionNavigation.Services
 {
     /// <summary>
-    /// 翻转台小时产能存储的服务
+    /// 翻转台小时产能存储的服务接口
     /// </summary>
     public interface IFlipperHourlyCapacityService
     {
-        /// <summary>
-        /// 处理并存储产能相关数据
-        /// </summary>
-        /// <param name="plcName">PLC 枚举标识</param>
-        /// <param name="data">PLC 传来的数据字典</param>
         Task ProcessFlipperHourlyDataAsync(string plcName, Dictionary<string, object>? data);
         event Action<string, string, object> OnModuleDataChanged;
         Task QueryAndBroadcastAsync(string deviceName, DateTime start, DateTime end);
     }
+
+    /// <summary>
+    /// 服务实现类
+    /// </summary>
     public class FlipperHourlyCapacityService : IFlipperHourlyCapacityService
     {
-        private readonly ISqlSugarClient _db;
+        // 使用你定义的泛型仓储接口
+        private readonly IRepository<FlipperHourlyCapacityRecord> _db;
+
         public event Action<string, string, object> OnModuleDataChanged;
 
-        public FlipperHourlyCapacityService(ISqlSugarClient db)
+        // 构造函数注入泛型仓储
+        public FlipperHourlyCapacityService(IRepository<FlipperHourlyCapacityRecord> db)
         {
             _db = db;
         }
+
         public async Task QueryAndBroadcastAsync(string deviceName, DateTime start, DateTime end)
         {
-            // 1. 从数据库查数据 (SqlSugar)
-            // 假设我们要查 "按小时" 的产能统计
-            var list = await _db.Queryable<FlipperHourlyCapacityRecord>()
-                .Where(x => x.DeviceName == deviceName && x.CreateTime >= start && x.CreateTime <= end)
-                .OrderBy(x => x.CreateTime)
-                .ToListAsync();
+            // 1. 从数据库查数据
+            // 修改点：因为 IRepository 封装了 Queryable，我们使用 GetListAsync 获取符合条件的数据
+            // 注意：你的仓储 GetListAsync 不直接支持 OrderBy，我们取回数据后在内存中排序
+            var rawList = await _db.GetListAsync(x =>
+                x.DeviceName == deviceName &&
+                x.CreateTime >= start &&
+                x.CreateTime <= end
+            );
 
-            // 2. 数据处理：我们需要填满时间轴，防止中间有空缺
-            // 假设我们要生成最近 24 小时的数据
-            var fullData = new double[24]; // 假设显示24个点
-                                           // 这里需要根据你的业务逻辑，把 list 映射到 fullData 数组里
-                                           // 简单示例：直接取前24个，或者根据时间对齐
+            // 内存排序 (数据量小，性能无影响)
+            var list = rawList.OrderBy(x => x.CreateTime).ToList();
 
-            // 示例：简单映射 (实际项目建议用时间对齐算法)
+            // 2. 数据处理：填满时间轴 (示例逻辑保持不变)
+            // 假设我们要生成最近 24 小时的数据，这里做简单映射
             var values = list.Select(x => (double)(x.HourlyCapacity ?? 0)).ToArray();
 
             // 3. 打包 DTO
             var dto = new ColumnChartDto
             {
-                IsUp = deviceName.Contains("Up"), // 简单判断是上还是下
+                IsUp = deviceName.Contains("Up"),
                 Values = values,
                 StartTime = start,
                 EndTime = end,
                 TimeUnit = Unit.时
             };
 
-            // 4. 发送广播 (复用之前的事件机制)
-            // 参数1: 模组ID (需要从 deviceName 解析，比如 "Module_01")
-            // 参数2: 数据类型 "Column"
-            // 参数3: 数据包 dto
+            // 4. 发送广播
             string moduleId = ParseModuleId(deviceName);
             OnModuleDataChanged?.Invoke(moduleId, "Column", dto);
         }
 
         private string ParseModuleId(string deviceName)
         {
-            // 根据你的命名规则解析，例如 "Module_01_Up" -> "Module_01"
-            // 这里简单返回
-            return deviceName.Split('_')[0] + "_" + deviceName.Split('_')[1];
+            // 简单解析逻辑
+            if (string.IsNullOrEmpty(deviceName) || !deviceName.Contains("_")) return deviceName;
+            var parts = deviceName.Split('_');
+            if (parts.Length >= 2) return parts[0] + "_" + parts[1];
+            return deviceName;
         }
+
         public async Task ProcessFlipperHourlyDataAsync(string plcName, Dictionary<string, object> data)
         {
             if (data == null) return;
 
-            // 1. 将 Dictionary 转为实体类 (假设 Key 名 = 属性名)
-            // SqlSugar 并不直接提供 Dict To Entity，但我们可以用简单的反射
+            // 1. 将 Dictionary 转为实体类
             var record = new FlipperHourlyCapacityRecord
             {
-                DeviceName = plcName.ToString(),
+                DeviceName = plcName, // 不需要 .ToString()，本身就是 string
                 CreateTime = DateTime.Now
             };
 
-            // 遍历字典，自动匹配属性赋值
+            // 反射赋值逻辑保持不变
             foreach (var item in data)
             {
                 var prop = typeof(FlipperHourlyCapacityRecord).GetProperty(item.Key);
-                if (prop != null && item.Value != null)
+                // 增加判断：属性存在且可写
+                if (prop != null && prop.CanWrite && item.Value != null)
                 {
-                    var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                    var val = Convert.ChangeType(item.Value, targetType);
-                    prop.SetValue(record, val);
+                    try
+                    {
+                        // 处理 Nullable 类型转换
+                        var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                        var val = Convert.ChangeType(item.Value, targetType);
+                        prop.SetValue(record, val);
+                    }
+                    catch
+                    {
+                        // 忽略类型转换失败，防止单个字段错误导致整个记录丢失
+                    }
                 }
             }
 
-            await _db.Insertable(record).ExecuteCommandAsync();
+            // 2. 插入数据库
+            // 修改点：使用 IRepository 提供的 InsertAsync 方法
+            await _db.InsertAsync(record);
         }
     }
 
@@ -104,7 +118,7 @@ namespace BasicRegionNavigation.Services
     public class FlipperHourlyCapacityRecord
     {
         [SugarColumn(IsPrimaryKey = true)]
-        public long Id { get; set; }
+        public int Id { get; set; }
 
         // --- 工序 1 (上翻转台、下翻转台) ---
 

@@ -1,4 +1,5 @@
 ﻿using BasicRegionNavigation.Helper;
+using BasicRegionNavigation.ViewModels;
 using DocumentFormat.OpenXml.Spreadsheet;
 using My.Services;
 using MyModbus;
@@ -19,12 +20,18 @@ namespace BasicRegionNavigation.Services
         //一、上料信息采集,这个采集是根据某个触发点从而触发的一个任务，然后将数据存入数据库
         void ProductCollectionMissionStart();
 
-
         //二、两个上料机的小时数据采集，需要在每个整点的最后时刻将某个寄存器的数据作为小时产能数据存入数据库,并且伴随部分其他的小时数据
         void FeedersHourlyDataCollectionMissionStart();
 
         //三、翻转台的小时数据采集，需要在每个整点的最后时刻将某个寄存器的数据作为小时产能数据存入数据库,并且伴随部分其他的小时数据
         void FlipperHourlyDataCollectionMissionStart();
+
+        //四、下发设置
+        void SendSetting(int num, TableRowViewModel tableRowViewModel);
+
+        //五、主动触发转产
+        public void ChangeoverTrigger(int num);
+
 
     }
     public class MiddleFrameBusinessServices : IMiddleFrameBusinessServices
@@ -33,47 +40,62 @@ namespace BasicRegionNavigation.Services
         private readonly IUpDropHourlyCapacityService _upDropHourlyCapacityService;
         private readonly DataBus _bus;
         private readonly IProductionService _productionService;
+        private readonly DataCollectionEngine _engine;
 
-        public MiddleFrameBusinessServices(DataBus bus, IProductionService productionService, IFlipperHourlyCapacityService flipperHourlyCapacityService, IUpDropHourlyCapacityService upDropHourlyCapacityService)
+        public MiddleFrameBusinessServices(DataCollectionEngine engine, DataBus bus, IProductionService productionService, IFlipperHourlyCapacityService flipperHourlyCapacityService, IUpDropHourlyCapacityService upDropHourlyCapacityService)
         {
             //构造函数
             _flipperHourlyCapacityService = flipperHourlyCapacityService;
             _upDropHourlyCapacityService = upDropHourlyCapacityService;
             _bus = bus;
             _productionService = productionService;
+            _engine = engine;
         }
 
-        public void FeedersHourlyDataCollectionMissionStart()
-        {
-            //小时数据采集任务只会在每小时的最后一分钟触发,可以直接从DataBus获取对应的点位数据
-            //_upDropHourlyCapacityService.ProcessUpDropHourlyDataAsync();
 
-
-
-        }
-
-        public void FlipperHourlyDataCollectionMissionStart()
-        {
-            //同样在最后一小时触发,直接从DataBus获取对应的点位数据
-            //_flipperHourlyCapacityService.ProcessFlipperHourlyDataAsync();
-        }
-
+        #region  业务一、产品信息采集
+        private const string ModuleId = "1"; // 建议放入配置或作为类属性
+        private const string TriggerSuffix = "ReadTrigger"; // 统一的后缀，防止手写错误
         public void ProductCollectionMissionStart()
         {
+            // --- 供料机 (Feeders) ---
+            // 对应 CSV: PLC_Feeder_A_ReadTrigger -> 运行时: 1_PLC_Feeder_A_ReadTrigger
+            SubscribeToDevice("PLC_Feeder_A", TriggerSuffix, HandleUpLoad_Trigger);
+            SubscribeToDevice("PLC_Feeder_B", TriggerSuffix, HandleUpLoad_Trigger);
 
-            //订阅触发点A_Trigger、B_Trigger、Flip_Trigger（当触发点值为int值11时，开始采集数据）
-            InitializeSubscriptions();
-
-            //采集数据，直接从DataBus获取对应的点位数据，然后存入数据库,A_Trigger、B_Trigger工序只存入产品码字段，而Flip_Trigger工序根据产品码存入其他字段
-
-
-            //_productionService.ProcessProductDataAsync();
+            // --- 翻转台 (Flipper) ---
+            // 翻转台比较特殊，CSV 中设备ID是 PLC_Flipper，但点位区分了 A/B 面
+            // 对应 CSV: PLC_Flipper_A_ReadTrigger -> 运行时: 1_PLC_Flipper_A_ReadTrigger
+            // 因此这里的后缀需要补上 "A_" 或 "B_"
+            SubscribeToDevice("PLC_Flipper", $"A_{TriggerSuffix}", HandleFlipper_Trigger);
+            SubscribeToDevice("PLC_Flipper", $"B_{TriggerSuffix}", HandleFlipper_Trigger);
 
         }
+        /// <summary>
+        /// 通用订阅辅助方法
+        /// </summary>
+        /// <param name="templateDeviceId">CSV中的原始设备ID (如 PLC_Feeder_A)</param>
+        /// <param name="pointSuffix">点位后缀 (如 ReadTrigger)</param>
+        /// <param name="handler">回调函数</param>
+        private void SubscribeToDevice(string templateDeviceId, string pointSuffix, Action<TagData> handler)
+        {
+            // 1. 构造运行时的设备 ID (自动加上模组前缀)
+            // 结果: "1_PLC_Feeder_A"
+            string realDeviceId = ModbusKeyHelper.BuildDeviceId(ModuleId, templateDeviceId);
+
+            // 2. 构造完整的点位名 (自动加上分隔符)
+            // 结果: "1_PLC_Feeder_A_ReadTrigger"
+            string finalTagName = ModbusKeyHelper.Build(realDeviceId, null, pointSuffix);
+
+            // 3. 注册订阅
+            _bus.Subscribe(finalTagName, handler);
+        }
+
 
         private void HandleUpLoad_Trigger(TagData data)
         {
-            if (data.IsQualityGood && data.Value is short speed && speed == 11)
+            //上料机这边是触发点为1时表示触发，读完回写0即可
+            if (data.IsQualityGood && data.Value is System.Int16 speed && speed == 1)
             {
                 //触发成功
                 //去缓冲区读产品码,先要知道那个点位名
@@ -95,8 +117,15 @@ namespace BasicRegionNavigation.Services
                     );
                     _productionService.ProcessProductDataAsync(contextA);
                 }
+
+                //回写
+                _engine.WriteTag(data.TagName, 0);
             }
+
+
+
         }
+
 
         private void HandleFlipper_Trigger(TagData data)
         {
@@ -146,49 +175,87 @@ namespace BasicRegionNavigation.Services
             }
         }
 
+        #endregion
 
-
-
-
-
-        private const string ModuleId = "1"; // 建议放入配置或作为类属性
-        private const string TriggerSuffix = "ReadTrigger"; // 统一的后缀，防止手写错误
-
-        private void InitializeSubscriptions()
+        #region 业务二、供料机小时数据采集
+        public void FeedersHourlyDataCollectionMissionStart()
         {
-            // --- 供料机 (Feeders) ---
-            // 对应 CSV: PLC_Feeder_A_ReadTrigger -> 运行时: 1_PLC_Feeder_A_ReadTrigger
-            SubscribeToDevice("PLC_Feeder_A", TriggerSuffix, HandleUpLoad_Trigger);
-            SubscribeToDevice("PLC_Feeder_B", TriggerSuffix, HandleUpLoad_Trigger);
+            //小时数据采集任务只会在每小时的最后一分钟触发,可以直接从DataBus获取对应的点位数据
+            //_upDropHourlyCapacityService.ProcessUpDropHourlyDataAsync();
+        }
 
-            // --- 翻转台 (Flipper) ---
-            // 翻转台比较特殊，CSV 中设备ID是 PLC_Flipper，但点位区分了 A/B 面
-            // 对应 CSV: PLC_Flipper_A_ReadTrigger -> 运行时: 1_PLC_Flipper_A_ReadTrigger
-            // 因此这里的后缀需要补上 "A_" 或 "B_"
-            SubscribeToDevice("PLC_Flipper", $"A_{TriggerSuffix}", HandleFlipper_Trigger);
-            SubscribeToDevice("PLC_Flipper", $"B_{TriggerSuffix}", HandleFlipper_Trigger);
+        #endregion
+
+        #region 业务三、翻转台小时数据采集
+        public void FlipperHourlyDataCollectionMissionStart()
+        {
+            //同样在最后一小时触发,直接从DataBus获取对应的点位数据
+            //_flipperHourlyCapacityService.ProcessFlipperHourlyDataAsync();
+        }
+        #endregion
+
+        #region 业务四、向供料机、翻转台下发数据
+        public void SendSetting(int num, TableRowViewModel tableRowViewModel)
+        {
+            // num表示几号模组 (例如 1)
+            string moduleId = num.ToString();
+
+            // 1. 构造设备ID
+            // 结果: 1_PLC_Feeder_A, 1_PLC_Feeder_B, 1_PLC_Flipper
+            string deviceFeederA = ModbusKeyHelper.BuildDeviceId(moduleId, "PLC_Feeder_A");
+            string deviceFeederB = ModbusKeyHelper.BuildDeviceId(moduleId, "PLC_Feeder_B");
+            string deviceFlipper = ModbusKeyHelper.BuildDeviceId(moduleId, "PLC_Flipper");
+
+            // 2. 下发给 供料机 A
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFeederA, null, "ProjectNo"), tableRowViewModel.ProjectCodes);
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFeederA, null, "ProductType"), tableRowViewModel.ProductTypes);
+            //_engine.WriteTag(ModbusKeyHelper.Build(deviceFeederA, null, "MaterialCategory"), tableRowViewModel.MaterialCategorys);
+
+            // 3. 下发给 供料机 B
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFeederB, null, "ProjectNo"), tableRowViewModel.ProjectCodes);
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFeederB, null, "ProductType"), tableRowViewModel.ProductTypes);
+            //_engine.WriteTag(ModbusKeyHelper.Build(deviceFeederB, null, "MaterialCategory"), tableRowViewModel.MaterialCategorys);
+
+            // 4. 下发给 翻转台 (同时写入 A 面和 B 面，确保参数同步)
+            // 根据 FlipperProductProxy 逻辑，翻转台点位带有 A_ / B_ 前缀
+
+            // Side A
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFlipper, null, "A_ProjectNo"), tableRowViewModel.ProjectCodes);
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFlipper, null, "A_ProductType"), tableRowViewModel.ProductTypes);
+            //_engine.WriteTag(ModbusKeyHelper.Build(deviceFlipper, null, "A_MaterialCategory"), tableRowViewModel.MaterialCategorys);
+
+            // Side B
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFlipper, null, "B_ProjectNo"), tableRowViewModel.ProjectCodes);
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFlipper, null, "B_ProductType"), tableRowViewModel.ProductTypes);
+            //_engine.WriteTag(ModbusKeyHelper.Build(deviceFlipper, null, "B_MaterialCategory"), tableRowViewModel.MaterialCategorys);
         }
 
         /// <summary>
-        /// 通用订阅辅助方法
+        /// 上位机主动触发转产
         /// </summary>
-        /// <param name="templateDeviceId">CSV中的原始设备ID (如 PLC_Feeder_A)</param>
-        /// <param name="pointSuffix">点位后缀 (如 ReadTrigger)</param>
-        /// <param name="handler">回调函数</param>
-        private void SubscribeToDevice(string templateDeviceId, string pointSuffix, Action<TagData> handler)
+        /// <param name="num"></param>
+        public void ChangeoverTrigger(int num)
         {
-            // 1. 构造运行时的设备 ID (自动加上模组前缀)
-            // 结果: "1_PLC_Feeder_A"
-            string realDeviceId = ModbusKeyHelper.BuildDeviceId(ModuleId, templateDeviceId);
+            string moduleId = num.ToString();
+            string suffix = "Hourly_ChangeoverTrigger";
+            short triggerVal = 1; // 写入 1 触发
+            short triggerVal_ = 11; // 写入 11 触发
 
-            // 2. 构造完整的点位名 (自动加上分隔符)
-            // 结果: "1_PLC_Feeder_A_ReadTrigger"
-            string finalTagName = ModbusKeyHelper.Build(realDeviceId, null, pointSuffix);
+            // 1. 构造设备ID
+            string deviceFeederA = ModbusKeyHelper.BuildDeviceId(moduleId, "PLC_Feeder_A");
+            string deviceFeederB = ModbusKeyHelper.BuildDeviceId(moduleId, "PLC_Feeder_B");
+            string deviceFlipper = ModbusKeyHelper.BuildDeviceId(moduleId, "PLC_Flipper");
 
-            // 3. 注册订阅
-            _bus.Subscribe(finalTagName, handler);
+            // 2. 写入转产信号
+            // 结果示例: 1_PLC_Feeder_A_Hourly_ChangeoverTrigger
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFeederA, null, suffix), triggerVal);
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFeederB, null, suffix), triggerVal);
+
+            // 翻转台的转产信号通常是全局的，根据注释直接拼接后缀即可
+            // 结果示例: 1_PLC_Flipper_Hourly_ChangeoverTrigger
+            _engine.WriteTag(ModbusKeyHelper.Build(deviceFlipper, null, suffix), triggerVal_);//翻转台是写入11
         }
-
+        #endregion
 
     }
     public class UpLoadProxy
@@ -297,7 +364,7 @@ namespace BasicRegionNavigation.Services
 
         // 产品类型/原料类别: PLC_Flipper_A_ProductType (或 MaterialCategory，视你具体需求而定)
         // 这里映射到 ProductType，如需 MaterialCategory 请修改后缀
-        public string ProductCategory => _bus.GetValue($"{_prefix}_ProductType")?.ToString() ?? string.Empty;
+        public string ProductCategory => _bus.GetValue($"{_prefix}_MaterialCategory")?.ToString() ?? string.Empty;
 
         // 辅助属性：获取当前是 A 面还是 B 面
         public bool IsSideA => _prefix.EndsWith("A");

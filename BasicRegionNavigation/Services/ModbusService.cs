@@ -9,7 +9,7 @@ namespace BasicRegionNavigation.Services
     {
         event Action<string, ModuleDataCategory, object> OnModuleDataChanged;
 
-        void SubscribeDynamicGroup(string moduleId, ModuleDataCategory category, string locationPrefix, string[] fields);
+        void SubscribeDynamicGroup(string moduleId, ModuleDataCategory category, Dictionary<string, string> fieldMapping);
 
         // 产能订阅也可以保留，用于简单的连续地址读取
         void SubscribeCapacity(string moduleId, ModuleDataCategory category, string tagInfix, int startIndex, int count);
@@ -37,32 +37,38 @@ namespace BasicRegionNavigation.Services
         }
 
         /// <summary>
-        /// 通用订阅方法：自动映射点位名，并返回字典数据
+        /// 动态组订阅（支持字段映射）
         /// </summary>
-        public void SubscribeDynamicGroup(string moduleId, ModuleDataCategory category, string locationPrefix, string[] fields)
+        /// <param name="moduleId">模组编号 (如 "1")</param>
+        /// <param name="category">数据分类 (Status/Capacity)</param>
+        /// <param name="fieldMapping">字段映射字典：Key=UI属性名, Value=CSV中的点位后缀</param>
+        public void SubscribeDynamicGroup(string moduleId, ModuleDataCategory category, Dictionary<string, string> fieldMapping)
         {
-            // 1. 生成点位名
-            var tags = fields.Select(field =>
-            {
-                // [修改点] 使用 ModbusKeyHelper.Build 统一生成
-                // 自动处理 moduleId(设备ID) + locationPrefix(分组) + field(字段名) 的拼接
-                // 例如: Build("1", "IO", "FeedLift") -> "1_IO_FeedLift"
-                // 例如: Build("1", null, "Status")   -> "1_Status"
-                return ModbusKeyHelper.Build(moduleId, locationPrefix, field);
+            var uiFields = fieldMapping.Keys.ToArray();
+            var tagSuffixes = fieldMapping.Values.ToArray();
 
+            // 1. 生成完整的点位名
+            // 直接使用 CSV 中的名称后缀，不再强制加 IO/Data 前缀
+            var fullTags = tagSuffixes.Select(suffix =>
+            {
+                // ModbusKeyHelper.Build 会自动处理: moduleId + "_" + suffix
+                // 结果示例: "1_PLC_Peripheral_FeedStation1Status"
+                return ModbusKeyHelper.Build(moduleId, null, suffix);
             }).ToArray();
 
             // 2. 订阅
-            _bus.Subscribe<int>(tags, (values, isGood) =>
+            // 注意：如果 CSV 中是 Bool 类型，Subscribe<int> 通常会自动转换 (true->1, false->0)
+            // 如果遇到类型转换错误，请改用 Subscribe<double> 或 Subscribe<bool>
+            _bus.Subscribe<int>(fullTags, (values, isGood) =>
             {
-                if (isGood && values != null && values.Length == fields.Length)
+                if (isGood && values != null && values.Length == uiFields.Length)
                 {
                     var dataPayload = new Dictionary<string, int>();
 
-                    for (int i = 0; i < fields.Length; i++)
+                    for (int i = 0; i < uiFields.Length; i++)
                     {
-                        // 字典的 Key 依然保持纯净的 field 名，方便 UI 绑定
-                        dataPayload[fields[i]] = values[i];
+                        // 将读取到的值 (values[i]) 赋值给 UI 对应的字段名 (uiFields[i])
+                        dataPayload[uiFields[i]] = values[i];
                     }
 
                     OnModuleDataChanged?.Invoke(moduleId, category, dataPayload);

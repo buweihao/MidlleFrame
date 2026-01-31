@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup Label="Globals">
+	  <WebView2UseWinRT>False</WebView2UseWinRT>
+	</PropertyGroup>
 	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
+		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0-windows7.0</TargetFramework>
 		<AssemblyName>Template</AssemblyName>
 		<UseWPF>true</UseWPF>
@@ -150,6 +153,9 @@
 	  </Reference>
 	  <Reference Include="MyDatabase">
 	    <HintPath>D:\工作项目\My\MyDatabase\bin\Debug\net8.0-windows\MyDatabase.dll</HintPath>
+	  </Reference>
+	  <Reference Include="MyLog">
+	    <HintPath>D:\工作项目\My\MyLog\bin\Debug\net8.0-windows\MyLog.dll</HintPath>
 	  </Reference>
 	  <Reference Include="MyModbus">
 	    <HintPath>D:\工作项目\My\MyModbus\bin\Debug\net8.0-windows\MyModbus.dll</HintPath>
